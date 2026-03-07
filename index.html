@@ -2,259 +2,210 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strive Pro | Mobile Habit Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Strive Cloud | Sync Habit Tracker</title>
     
-    <!-- PWA Manifest for Mobile -->
-    <link rel="manifest" href='data:application/json,{"name":"Strive Habit Tracker","short_name":"Strive","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3208/3208741.png","sizes":"512x512","type":"image/png"}]}'>
+    <!-- PWA Meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href='data:application/json,{"name":"Strive Cloud","short_name":"Strive","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3208/3208741.png","sizes":"512x512","type":"image/png"}]}'>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-        
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; min-height: 100vh; overflow-y: auto; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        
-        /* Drag and Drop Styling */
-        .habit-card.dragging { opacity: 0.4; border: 2px dashed #3b82f6; }
-        .drag-handle { cursor: grab; padding: 10px; color: #475569; }
-        .drag-handle:active { cursor: grabbing; }
-
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .day-box { aspect-ratio: 1/1; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.03); }
-        .day-box.active { background: var(--accent-color); color: white; box-shadow: 0 0 8px var(--accent-color); }
-        
-        .notification-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+        .day-box { aspect-ratio: 1/1; font-size: 0.6rem; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); cursor: pointer; }
+        .day-box.active { background: var(--c); color: white; box-shadow: 0 0 10px var(--c); }
+        .sortable-ghost { opacity: 0.3; background: #3b82f6 !important; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-10 pb-24">
 
-    <div class="max-w-5xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-white mb-2">My Daily Path</h1>
-                <p id="stats-summary" class="text-slate-400">Loading your data...</p>
+    <div class="max-w-4xl mx-auto">
+        <!-- Auth Header -->
+        <div id="auth-section" class="flex justify-between items-center mb-10 glass p-4 rounded-2xl">
+            <h1 class="text-xl font-extrabold tracking-tight">Strive <span class="text-blue-500">Cloud</span></h1>
+            <button id="login-btn" class="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/pmsd/google_signin_helper.png" class="w-4"> Sync with Google
+            </button>
+            <div id="user-info" class="hidden flex items-center gap-3">
+                <img id="user-photo" class="w-8 h-8 rounded-full border border-blue-500">
+                <button onclick="logout()" class="text-xs text-slate-500 underline">Logout</button>
             </div>
-            <div class="flex gap-3">
-                <button onclick="requestNotificationPermission()" class="glass p-3 rounded-2xl text-slate-400 hover:text-blue-400">
-                    <i data-lucide="bell"></i>
-                </button>
-                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20">
-                    + Add Habit
-                </button>
-            </div>
-        </header>
-
-        <div id="habits-list" class="space-y-6 pb-20">
-            <!-- Habit cards will be injected here -->
         </div>
-    </div>
 
-    <!-- Modal for Create/Edit -->
-    <div id="habit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="glass w-full max-w-md p-8 rounded-[2.5rem] border-slate-800">
-            <h2 id="modal-title" class="text-2xl font-bold mb-6">New Habit</h2>
-            <div class="space-y-4">
+        <div id="app-content" class="opacity-50 pointer-events-none">
+            <div class="flex justify-between items-end mb-8">
                 <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Habit Name</label>
-                    <input type="text" id="habit-name" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 mt-1 text-white">
+                    <h2 class="text-3xl font-extrabold">My Journey</h2>
+                    <p class="text-slate-400 text-sm">Drag to reorder • Tap to track</p>
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Reminder Time (Notification)</label>
-                    <input type="time" id="habit-time" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 mt-1 text-white">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase ml-1">Theme Color</label>
-                    <div class="flex gap-3 mt-2" id="color-picker">
-                        <div onclick="setTheme('#3b82f6')" data-color="#3b82f6" class="w-8 h-8 rounded-full bg-blue-500 color-opt"></div>
-                        <div onclick="setTheme('#10b981')" data-color="#10b981" class="w-8 h-8 rounded-full bg-emerald-500 color-opt"></div>
-                        <div onclick="setTheme('#f59e0b')" data-color="#f59e0b" class="w-8 h-8 rounded-full bg-amber-500 color-opt"></div>
-                        <div onclick="setTheme('#ef4444')" data-color="#ef4444" class="w-8 h-8 rounded-full bg-red-500 color-opt"></div>
-                    </div>
-                </div>
-                <div class="flex gap-3 pt-6">
-                    <button onclick="closeModal()" class="flex-1 py-3 rounded-xl bg-slate-800 text-slate-400">Cancel</button>
-                    <button onclick="handleHabitSubmit()" class="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold">Save</button>
-                </div>
+                <button onclick="toggleModal(true)" class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-900/40">
+                    <i data-lucide="plus"></i>
+                </button>
+            </div>
+
+            <div id="habits-container" class="space-y-4">
+                <!-- Habits injected here -->
             </div>
         </div>
     </div>
 
-    <script>
-        const STORAGE_KEY = 'strive_v5_final';
-        let habits = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let selectedColor = '#3b82f6';
-        let editingId = null;
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
+        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
+            <h3 class="text-2xl font-bold mb-6">New Skill</h3>
+            <input type="text" id="h-name" placeholder="Name (e.g. Gym)" class="w-full bg-slate-800 border-none rounded-2xl p-4 mb-4 text-white">
+            <input type="time" id="h-time" class="w-full bg-slate-800 border-none rounded-2xl p-4 mb-6 text-white">
+            <div class="flex gap-4 mb-8">
+                <button onclick="closeModal()" class="flex-1 text-slate-400 font-bold">Cancel</button>
+                <button onclick="saveHabit()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold">Launch</button>
+            </div>
+        </div>
+    </div>
 
-        function openModal(id = null) {
-            editingId = id;
-            const h = habits.find(x => x.id === id);
-            document.getElementById('modal-title').innerText = id ? 'Edit Habit' : 'New Habit';
-            document.getElementById('habit-name').value = h ? h.name : '';
-            document.getElementById('habit-time').value = h ? h.time : '09:00';
-            setTheme(h ? h.color : '#3b82f6');
-            document.getElementById('habit-modal').style.display = 'flex';
-        }
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        function closeModal() { document.getElementById('habit-modal').style.display = 'none'; editingId = null; }
+        // 1. PASTE YOUR FIREBASE CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-        function setTheme(c) {
-            selectedColor = c;
-            document.querySelectorAll('.color-opt').forEach(b => {
-                b.style.border = b.dataset.color === c ? '2px solid white' : 'none';
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        let habits = [];
+        let currentUser = null;
+
+        // Login/Auth Logic
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-section').classList.add('justify-end');
+                document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-photo').src = user.photoURL;
+                document.getElementById('app-content').classList.remove('opacity-50', 'pointer-events-none');
+                listenToHabits();
+            } else {
+                location.reload();
+            }
+        });
+
+        // Real-time Sync Logic
+        function listenToHabits() {
+            const q = query(collection(db, "users", currentUser.uid, "habits"), orderBy("order"));
+            onSnapshot(q, (snapshot) => {
+                habits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
             });
         }
 
-        function handleHabitSubmit() {
-            const name = document.getElementById('habit-name').value;
-            const time = document.getElementById('habit-time').value;
+        async function saveHabit() {
+            const name = document.getElementById('h-name').value;
+            const time = document.getElementById('h-time').value;
             if(!name) return;
 
-            if (editingId) {
-                const h = habits.find(x => x.id === editingId);
-                h.name = name; h.time = time; h.color = selectedColor;
-            } else {
-                habits.push({ id: Date.now(), name, time, color: selectedColor, logs: [] });
-            }
-            saveAndRender();
+            const id = Date.now().toString();
+            await setDoc(doc(db, "users", currentUser.uid, "habits", id), {
+                name, time, order: habits.length, logs: [], color: '#3b82f6'
+            });
             closeModal();
         }
 
-        // Drag and Drop Logic
-        let dragSrcEl = null;
-        function handleDragStart(e) {
-            dragSrcEl = this;
-            this.classList.add('dragging');
-        }
-        function handleDragOver(e) { e.preventDefault(); return false; }
-        function handleDragEnd(e) { this.classList.remove('dragging'); }
-        function handleDrop(e) {
-            e.stopPropagation();
-            if (dragSrcEl !== this) {
-                const list = [...document.querySelectorAll('.habit-card')];
-                const fromIdx = list.indexOf(dragSrcEl);
-                const toIdx = list.indexOf(this);
-                const [movedHabit] = habits.splice(fromIdx, 1);
-                habits.splice(toIdx, 0, movedHabit);
-                saveAndRender();
+        window.toggleDate = async (habitId, dateStr) => {
+            const h = habits.find(x => x.id === habitId);
+            const newLogs = h.logs.includes(dateStr) 
+                ? h.logs.filter(d => d !== dateStr) 
+                : [...h.logs, dateStr];
+            
+            if(!h.logs.includes(dateStr) && dateStr === new Date().toISOString().split('T')[0]) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
             }
-            return false;
-        }
 
-        function renderHabits() {
-            const list = document.getElementById('habits-list');
-            list.innerHTML = '';
+            await setDoc(doc(db, "users", currentUser.uid, "habits", habitId), { logs: newLogs }, { merge: true });
+        };
+
+        function render() {
+            const container = document.getElementById('habits-container');
+            container.innerHTML = '';
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
-            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
-            habits.forEach((habit, idx) => {
-                const isDoneToday = habit.logs.includes(todayStr);
-                const card = document.createElement('div');
-                card.className = 'habit-card glass p-6 rounded-[2rem] flex flex-col lg:flex-row gap-6 items-center';
-                card.draggable = true;
-                card.addEventListener('dragstart', handleDragStart);
-                card.addEventListener('dragover', handleDragOver);
-                card.addEventListener('drop', handleDrop);
-                card.addEventListener('dragend', handleDragEnd);
+            habits.forEach(h => {
+                const isDone = h.logs.includes(todayStr);
+                const el = document.createElement('div');
+                el.className = 'glass p-5 rounded-[2rem] flex items-center gap-4 habit-card';
+                el.dataset.id = h.id;
 
-                let calendarHtml = '';
-                for(let i=1; i<=daysInMonth; i++) {
-                    const dStr = `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`;
-                    const active = habit.logs.includes(dStr);
-                    calendarHtml += `<div onclick="toggleDate(${habit.id}, '${dStr}')" class="day-box ${active?'active':''}" style="${active?'--accent-color:'+habit.color:'' }">${i}</div>`;
+                let calendar = '';
+                for(let i=0; i<14; i++) { // Show last 14 days
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const dStr = d.toISOString().split('T')[0];
+                    const active = h.logs.includes(dStr);
+                    calendar = `<div onclick="toggleDate('${h.id}', '${dStr}')" class="day-box ${active?'active':''}" style="--c:${h.color}">${d.getDate()}</div>` + calendar;
                 }
 
-                card.innerHTML = `
-                    <div class="drag-handle"><i data-lucide="grip-vertical"></i></div>
-                    <div class="flex-1 w-full">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <h3 class="text-xl font-bold">${habit.name}</h3>
-                                <span class="notification-badge"><i data-lucide="clock" class="inline w-3 h-3 mr-1"></i>${habit.time}</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="openModal(${habit.id})" class="text-slate-500 hover:text-white"><i data-lucide="pencil"></i></button>
-                                <button onclick="deleteHabit(${habit.id})" class="text-slate-500 hover:text-red-400"><i data-lucide="trash-2"></i></button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="stat-card glass border-none bg-white/5 p-4 rounded-xl text-center">
-                                <p class="text-[10px] uppercase font-bold text-slate-500">Weekly</p>
-                                <p class="text-lg font-bold" style="color:${habit.color}">${calculateWeekly(habit)}%</p>
-                            </div>
-                            <div onclick="toggleDate(${habit.id}, '${todayStr}')" class="cursor-pointer glass border-2 p-4 rounded-xl text-center transition-all ${isDoneToday?'border-emerald-500 bg-emerald-500/10':'border-slate-700'}">
-                                <p class="text-xs font-bold">${isDoneToday?'COMPLETE':'MARK DONE'}</p>
-                            </div>
-                        </div>
+                el.innerHTML = `
+                    <div class="drag-handle text-slate-700 cursor-grab"><i data-lucide="grip-vertical"></i></div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">${h.name}</h3>
+                        <div class="calendar-grid mt-3">${calendar}</div>
                     </div>
-                    <div class="w-full lg:w-1/3">
-                        <div class="calendar-grid">${calendarHtml}</div>
+                    <div onclick="toggleDate('${h.id}', '${todayStr}')" class="w-14 h-14 rounded-2xl flex items-center justify-center cursor-pointer transition-all ${isDone?'bg-blue-600 shadow-lg shadow-blue-500/50':'bg-slate-800'}">
+                        <i data-lucide="${isDone?'check':'circle'}" class="${isDone?'text-white':'text-slate-500'}"></i>
                     </div>
                 `;
-                list.appendChild(card);
+                container.appendChild(el);
             });
-            updateStats();
             lucide.createIcons();
+            setupSortable();
         }
 
-        function calculateWeekly(h) {
-            let count = 0;
-            for(let i=0; i<7; i++) {
-                const d = new Date(); d.setDate(d.getDate()-i);
-                if(h.logs.includes(d.toISOString().split('T')[0])) count++;
-            }
-            return Math.round((count/7)*100);
-        }
-
-        function toggleDate(id, date) {
-            const h = habits.find(x => x.id === id);
-            const idx = h.logs.indexOf(date);
-            if(idx > -1) h.logs.splice(idx, 1);
-            else {
-                h.logs.push(date);
-                if(date === new Date().toISOString().split('T')[0]) confetti({ particleCount: 100, origin: { y: 0.8 } });
-            }
-            saveAndRender();
-        }
-
-        function deleteHabit(id) { if(confirm('Erase this habit?')) { habits = habits.filter(x => x.id !== id); saveAndRender(); } }
-        
-        function saveAndRender() { localStorage.setItem(STORAGE_KEY, JSON.stringify(habits)); renderHabits(); }
-
-        function updateStats() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const done = habits.filter(h => h.logs.includes(todayStr)).length;
-            document.getElementById('stats-summary').innerText = habits.length ? `You've conquered ${done} of ${habits.length} habits today!` : "Start by adding a habit.";
-        }
-
-        // Notification System
-        async function requestNotificationPermission() {
-            const permission = await Notification.requestPermission();
-            if(permission === 'granted') alert('Notifications Enabled! You will be reminded at your set times.');
-        }
-
-        setInterval(() => {
-            const now = new Date();
-            const currentTime = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-            habits.forEach(h => {
-                if(h.time === currentTime && now.getSeconds() < 1) {
-                    new Notification(`Time for ${h.name}!`, { body: "Don't break your streak. Do it now!", icon: "https://cdn-icons-png.flaticon.com/512/3208/3208741.png" });
+        function setupSortable() {
+            new Sortable(document.getElementById('habits-container'), {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: async () => {
+                    const rows = [...document.querySelectorAll('.habit-card')];
+                    for(let i=0; i<rows.length; i++) {
+                        const id = rows[i].dataset.id;
+                        await setDoc(doc(db, "users", currentUser.uid, "habits", id), { order: i }, { merge: true });
+                    }
                 }
             });
-        }, 1000);
-
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            const swCode = `self.addEventListener('fetch', function(event) { event.respondWith(fetch(event.request)); });`;
-            const blob = new Blob([swCode], {type: 'text/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
         }
 
-        window.onload = renderHabits;
+        // Global Helpers
+        window.toggleModal = (show) => document.getElementById('modal').style.display = show ? 'flex' : 'none';
+        window.closeModal = () => window.toggleModal(false);
+        window.saveHabit = saveHabit;
+
+        // Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            const sw = `self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));`;
+            navigator.serviceWorker.register('data:text/javascript;base64,' + btoa(sw));
+        }
     </script>
 </body>
 </html>
