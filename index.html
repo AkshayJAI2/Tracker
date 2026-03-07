@@ -3,288 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Strive | Pro Sync Tracker</title>
+    <title>Strive | Real-Time Sync</title>
     
-    <!-- PWA Meta -->
+    <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href='data:application/json,{"name":"Strive","short_name":"Strive","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#3b82f6","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3208/3208741.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href='data:application/json,{"name":"Strive","short_name":"Strive","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#3b82f6"}'>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #020617; 
-            color: #f8fafc; 
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .glass { 
-            background: rgba(15, 23, 42, 0.8); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-        }
-
-        /* Fixed Calendar Grid */
-        .calendar-wrapper {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            width: 100%;
-        }
-
-        .day-cell {
-            aspect-ratio: 1/1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 0.65rem;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.02);
-        }
-
-        .day-cell.active {
-            background: var(--c);
-            color: white;
-            box-shadow: 0 4px 12px var(--shadow);
-            border: none;
-        }
-
-        .day-cell.today {
-            border: 1px solid rgba(255,255,255,0.3);
-            font-weight: 800;
-        }
-
-        .weekday-label {
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            opacity: 0.5;
-            margin-bottom: 2px;
-        }
-
-        /* Animations */
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
-        .pop-effect { animation: pop 0.3s ease-out; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .day-box { aspect-ratio: 1/1; font-size: 0.65rem; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); cursor: pointer; border: 1px solid transparent; }
+        .day-box.active { background: var(--c); color: white; box-shadow: 0 0 15px var(--c); border: none; }
+        .day-box.today { border: 1px solid rgba(255,255,255,0.4); }
+        .sync-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
-<body class="p-4 md:p-8 pb-32">
+<body class="p-4 md:p-10 pb-32">
 
-    <div class="max-w-2xl mx-auto">
+    <div class="max-w-xl mx-auto">
         <!-- Header -->
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight">STRIVE <span class="text-blue-500">PRO</span></h1>
-                <div id="sync-indicator" onclick="openSync()" class="text-[10px] font-bold py-1 px-2 rounded-full bg-slate-800 text-slate-400 mt-1 cursor-pointer inline-flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500" id="status-dot"></span>
-                    <span id="status-text">LOCAL MODE</span>
+                <h1 class="text-3xl font-extrabold tracking-tighter">STRIVE</h1>
+                <div id="sync-status" onclick="openSyncMenu()" class="text-[10px] font-bold mt-1 px-2 py-1 rounded-full bg-slate-800 text-slate-400 cursor-pointer inline-flex items-center gap-1">
+                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                    <span id="sync-text">OFFLINE MODE</span>
                 </div>
             </div>
-            <button onclick="openModal()" class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/40 active:scale-90 transition-transform">
+            <button onclick="openModal()" class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/40 active:scale-90 transition-transform">
                 <i data-lucide="plus"></i>
             </button>
         </header>
 
-        <!-- Main Container -->
-        <div id="habits-list" class="space-y-6">
-            <!-- Habit Cards -->
-        </div>
+        <!-- Habits -->
+        <div id="habits-list" class="space-y-6"></div>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- Modals -->
     <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 id="modal-title" class="text-xl font-bold mb-6 text-center">New Habit</h3>
-            <input type="text" id="h-name" placeholder="Name your habit..." class="w-full bg-slate-800 border-none rounded-2xl p-4 mb-6 text-white outline-none ring-2 ring-transparent focus:ring-blue-500 transition-all">
-            
-            <p class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-widest">Select Theme</p>
+            <h3 id="modal-title" class="text-xl font-bold mb-6">New Habit</h3>
+            <input type="text" id="h-name" placeholder="Name..." class="w-full bg-slate-800 rounded-xl p-4 mb-6 text-white outline-none ring-2 ring-transparent focus:ring-blue-500">
             <div class="flex justify-between mb-8">
-                <button onclick="setTheme('#3b82f6')" class="w-10 h-10 rounded-full bg-blue-500 ring-offset-4 ring-offset-slate-900 color-ring" id="color-1"></button>
-                <button onclick="setTheme('#10b981')" class="w-10 h-10 rounded-full bg-emerald-500" id="color-2"></button>
-                <button onclick="setTheme('#f59e0b')" class="w-10 h-10 rounded-full bg-amber-500" id="color-3"></button>
-                <button onclick="setTheme('#ef4444')" class="w-10 h-10 rounded-full bg-red-500" id="color-4"></button>
+                <button onclick="setTheme('#3b82f6')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-white"></button>
+                <button onclick="setTheme('#10b981')" class="w-10 h-10 rounded-full bg-emerald-500"></button>
+                <button onclick="setTheme('#f59e0b')" class="w-10 h-10 rounded-full bg-amber-500"></button>
+                <button onclick="setTheme('#ef4444')" class="w-10 h-10 rounded-full bg-red-500"></button>
             </div>
-
             <div class="flex gap-4">
-                <button onclick="closeModal()" class="flex-1 py-4 text-slate-400 font-bold">Cancel</button>
-                <button onclick="saveHabit()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold shadow-lg">Save</button>
+                <button onclick="closeModal()" class="flex-1 text-slate-400 font-bold">Cancel</button>
+                <button onclick="saveHabit()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Sync Modal -->
     <div id="sync-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
             <h3 class="text-xl font-bold mb-2">Cloud Sync</h3>
-            <p class="text-slate-400 text-xs mb-6">Enter a unique ID to sync this data between your PC and Mobile.</p>
-            <input type="text" id="sync-id-input" placeholder="e.g. MySecretTracker99" class="w-full bg-slate-800 border-none rounded-2xl p-4 mb-4 text-white font-bold text-center">
-            <button onclick="startSync()" class="w-full bg-white text-black py-4 rounded-2xl font-bold mb-3">Sync Devices</button>
+            <p class="text-slate-400 text-xs mb-6">Enter a <b>Secret Key</b> to sync PC & Mobile.</p>
+            <input type="text" id="sync-key" placeholder="e.g. MySecret99" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white text-center font-bold">
+            <button onclick="enableSync()" class="w-full bg-white text-black py-4 rounded-2xl font-bold mb-4">Connect Device</button>
             <button onclick="document.getElementById('sync-modal').style.display='none'" class="w-full text-slate-500 text-xs">Close</button>
         </div>
     </div>
 
     <script>
-        let habits = JSON.parse(localStorage.getItem('strive_v7')) || [];
+        let habits = JSON.parse(localStorage.getItem('strive_v8')) || [];
         let selectedColor = '#3b82f6';
         let editingId = null;
-        let syncId = localStorage.getItem('strive_sync_id');
+        let syncKey = localStorage.getItem('strive_sync_key');
 
-        const listContainer = document.getElementById('habits-list');
+        const list = document.getElementById('habits-list');
 
         window.onload = () => {
             render();
-            if(syncId) {
-                document.getElementById('sync-id-input').value = syncId;
-                pullSync();
-                startAutoSync();
+            if(syncKey) {
+                document.getElementById('sync-key').value = syncKey;
+                pullData();
+                setInterval(pullData, 5000); // Sync every 5 seconds
             }
+            lucide.createIcons();
         };
 
         function openModal(id = null) {
             editingId = id;
-            if(id) {
-                const h = habits.find(x => x.id === id);
-                document.getElementById('h-name').value = h.name;
-                selectedColor = h.color;
-                document.getElementById('modal-title').innerText = "Edit Habit";
-            } else {
-                document.getElementById('h-name').value = '';
-                document.getElementById('modal-title').innerText = "New Habit";
-            }
+            const h = habits.find(x => x.id === id);
+            document.getElementById('h-name').value = h ? h.name : '';
             document.getElementById('modal').style.display = 'flex';
         }
 
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
-        function openSync() { document.getElementById('sync-modal').style.display = 'flex'; }
+        function openSyncMenu() { document.getElementById('sync-modal').style.display = 'flex'; }
         function setTheme(c) { selectedColor = c; }
 
         function saveHabit() {
             const name = document.getElementById('h-name').value;
             if(!name) return;
-
             if(editingId) {
                 const h = habits.find(x => x.id === editingId);
                 h.name = name; h.color = selectedColor;
             } else {
-                habits.push({ id: Date.now().toString(), name, color: selectedColor, logs: [], order: habits.length });
+                habits.push({ id: Date.now().toString(), name, color: selectedColor, logs: [] });
             }
-            
-            saveData();
-            render();
+            updateData();
             closeModal();
         }
 
-        function toggleDate(habitId, dateStr) {
-            const h = habits.find(x => x.id === habitId.toString());
-            const idx = h.logs.indexOf(dateStr);
-            
+        function toggleDate(hid, dStr) {
+            const h = habits.find(x => x.id === hid.toString());
+            const idx = h.logs.indexOf(dStr);
             if(idx > -1) h.logs.splice(idx, 1);
             else {
-                h.logs.push(dateStr);
-                if(dateStr === getTodayStr()) {
-                    confetti({ particleCount: 100, origin: { y: 0.8 }, colors: [h.color] });
-                }
+                h.logs.push(dStr);
+                if(dStr === getToday()) confetti({ particleCount: 100, origin: { y: 0.8 }, colors: [h.color] });
             }
-            saveData();
-            render();
+            updateData();
         }
 
-        function deleteHabit(id) {
-            if(confirm('Delete this habit?')) {
-                habits = habits.filter(h => h.id !== id.toString());
-                saveData();
-                render();
-            }
-        }
-
-        function getTodayStr() {
+        function getToday() {
             const d = new Date();
             return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
         }
 
         function render() {
-            listContainer.innerHTML = '';
-            const todayStr = getTodayStr();
+            list.innerHTML = '';
+            const today = getToday();
             const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             habits.forEach(h => {
-                const card = document.createElement('div');
-                card.className = 'glass p-5 rounded-[2rem] habit-card';
-                card.style.setProperty('--c', h.color);
-                card.style.setProperty('--shadow', h.color + '44');
-
-                // Generate last 14 days aligned to columns
-                let calendarHtml = '';
+                let cal = '';
                 for(let i=13; i>=0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
+                    const d = new Date(); d.setDate(d.getDate() - i);
                     const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-                    const isToday = dStr === todayStr;
-                    const isActive = h.logs.includes(dStr);
-                    
-                    calendarHtml += `
-                        <div onclick="toggleDate('${h.id}', '${dStr}')" 
-                             class="day-cell ${isActive?'active':''} ${isToday?'today':''}">
-                             <span class="weekday-label">${weekDays[d.getDay()]}</span>
-                             ${d.getDate()}
-                        </div>
-                    `;
+                    const active = h.logs.includes(dStr);
+                    cal += `<div onclick="toggleDate('${h.id}','${dStr}')" class="day-box ${active?'active':''} ${dStr===today?'today':''}" style="--c:${h.color}">
+                        <span class="opacity-40 text-[8px]">${weekDays[d.getDay()]}</span>${d.getDate()}
+                    </div>`;
                 }
 
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <div onclick="openModal('${h.id}')" class="cursor-pointer">
-                            <h3 class="font-extrabold text-lg flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full" style="background:${h.color}"></span>
-                                ${h.name}
+                list.innerHTML += `
+                    <div class="glass p-5 rounded-[2rem]">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold flex items-center gap-2" onclick="openModal('${h.id}')">
+                                <span class="w-2 h-2 rounded-full" style="background:${h.color}"></span> ${h.name}
                             </h3>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
-                                ${h.logs.length} Total Days
-                            </p>
+                            <button onclick="deleteHabit('${h.id}')" class="text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
-                        <button onclick="deleteHabit('${h.id}')" class="text-slate-700 hover:text-red-500 transition-colors">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <div class="calendar-wrapper">
-                        ${calendarHtml}
-                    </div>
-                `;
-                listContainer.appendChild(card);
+                        <div class="calendar-grid">${cal}</div>
+                    </div>`;
             });
             lucide.createIcons();
         }
 
-        // SYNC ENGINE
-        async function startSync() {
-            const id = document.getElementById('sync-id-input').value.trim().toLowerCase();
-            if(!id) return;
-            syncId = id;
-            localStorage.setItem('strive_sync_id', id);
-            await pushSync();
-            document.getElementById('sync-modal').style.display = 'none';
-            startAutoSync();
+        function deleteHabit(id) {
+            if(confirm('Delete?')) {
+                habits = habits.filter(h => h.id !== id);
+                updateData();
+            }
         }
 
-        async function pushSync() {
-            if(!syncId) return;
+        // --- THE SYNC ENGINE ---
+        function updateData() {
+            localStorage.setItem('strive_v8', JSON.stringify(habits));
+            render();
+            if(syncKey) pushData();
+        }
+
+        async function enableSync() {
+            const key = document.getElementById('sync-key').value.trim().toLowerCase();
+            if(!key) return;
+            syncKey = key;
+            localStorage.setItem('strive_sync_key', key);
+            await pullData(); 
+            document.getElementById('sync-modal').style.display = 'none';
+        }
+
+        async function pushData() {
             updateStatus('syncing');
             try {
-                await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncId}`, {
+                await fetch(`https://jsonblob.com/api/jsonBlob/1234567890`, { // Simulated endpoint
+                    method: 'PUT', // We'd use a real ID here
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: syncKey, data: habits })
+                });
+                // Note: For this demo we use a shared logic. 
+                // Using 'https://api.jsonbin.io/v3/b' is better for production.
+                // Below is a zero-config version using a public relay:
+                await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncKey}`, {
                     method: 'POST',
                     body: JSON.stringify(habits)
                 });
@@ -292,36 +204,28 @@
             } catch (e) { updateStatus('error'); }
         }
 
-        async function pullSync() {
-            if(!syncId) return;
+        async function pullData() {
+            if(!syncKey) return;
             try {
-                const res = await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncId}`);
+                const res = await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncKey}`);
                 if(res.ok) {
                     const data = await res.json();
-                    if(data && data.length >= 0) {
+                    if(JSON.stringify(data) !== JSON.stringify(habits)) {
                         habits = data;
-                        localStorage.setItem('strive_v7', JSON.stringify(habits));
+                        localStorage.setItem('strive_v8', JSON.stringify(habits));
                         render();
                     }
+                    updateStatus('synced');
                 }
-            } catch (e) { console.log("Sync error:", e); }
+            } catch (e) { updateStatus('error'); }
         }
 
-        function startAutoSync() {
-            setInterval(pullSync, 10000); // Check for updates from other devices every 10s
-        }
-
-        function updateStatus(state) {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            if(state === 'syncing') { dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"; text.innerText = "SYNCING..."; }
-            if(state === 'synced') { dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500"; text.innerText = "CLOUD SYNC ACTIVE"; }
-            if(state === 'error') { dot.className = "w-1.5 h-1.5 rounded-full bg-red-500"; text.innerText = "SYNC ERROR"; }
-        }
-
-        function saveData() {
-            localStorage.setItem('strive_v7', JSON.stringify(habits));
-            if(syncId) pushSync();
+        function updateStatus(s) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            if(s === 'syncing') { dot.className = "w-2 h-2 rounded-full bg-amber-500 sync-pulse"; text.innerText = "SYNCING..."; }
+            if(s === 'synced') { dot.className = "w-2 h-2 rounded-full bg-emerald-500"; text.innerText = "CLOUD SYNC ACTIVE"; }
+            if(s === 'error') { dot.className = "w-2 h-2 rounded-full bg-red-500"; text.innerText = "SYNC ERROR"; }
         }
     </script>
 </body>
