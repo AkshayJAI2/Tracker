@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Strive Pro | Habit & Skill Hub</title>
+    <title>Strive Pro | Monthly Hub</title>
     
     <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,12 +25,11 @@
         
         /* Calendar Styling */
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .cal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.05); }
-        .cal-day.selected { background: #3b82f6; color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-        
-        /* Checkbox Styling */
-        .check-container input:checked ~ .checkmark { background-color: #3b82f6; border-color: #3b82f6; }
-        .check-container input:checked ~ .checkmark:after { display: block; }
+        .cal-header { font-size: 0.6rem; font-weight: 800; color: #475569; text-align: center; padding-bottom: 5px; }
+        .cal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
+        .cal-day.empty { background: transparent; cursor: default; }
+        .cal-day.selected { background: #3b82f6; color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); border: none; }
+        .cal-day.today-marker { border: 1px solid #3b82f6; }
     </style>
 </head>
 <body class="pb-24">
@@ -38,7 +37,7 @@
     <!-- Header -->
     <header class="p-6 flex justify-between items-center max-w-2xl mx-auto">
         <div>
-            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-blue-500 text-sm font-normal">v2.0</span></h1>
+            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-blue-500 text-sm font-normal">Cloud</span></h1>
             <div id="sync-indicator" onclick="openSync()" class="text-[10px] font-bold mt-1 px-2 py-1 rounded-full bg-slate-800 text-slate-400 cursor-pointer inline-flex items-center gap-1">
                 <span id="sync-dot" class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                 <span id="sync-text">NOT SYNCED</span>
@@ -68,26 +67,23 @@
 
     <!-- DASHBOARD TAB -->
     <main id="tab-dashboard" class="tab-content p-4 max-w-2xl mx-auto">
-        <h2 class="text-2xl font-bold mb-6">Performance Analysis</h2>
-        
+        <h2 class="text-2xl font-bold mb-6">Analysis</h2>
         <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="glass p-5 rounded-3xl">
-                <p class="text-xs text-slate-400 mb-1">Weekly Success</p>
+            <div class="glass p-5 rounded-3xl text-center">
+                <p class="text-xs text-slate-400 mb-1">Weekly</p>
                 <h3 id="stat-weekly" class="text-2xl font-bold text-blue-400">0%</h3>
             </div>
-            <div class="glass p-5 rounded-3xl">
-                <p class="text-xs text-slate-400 mb-1">Monthly Success</p>
+            <div class="glass p-5 rounded-3xl text-center">
+                <p class="text-xs text-slate-400 mb-1">Monthly</p>
                 <h3 id="stat-monthly" class="text-2xl font-bold text-emerald-400">0%</h3>
             </div>
         </div>
-
         <div class="glass p-6 rounded-[2rem] mb-6">
-            <p class="text-xs font-bold text-slate-500 uppercase mb-4">Activity Trend (Last 7 Days)</p>
             <canvas id="analyticsChart" height="200"></canvas>
         </div>
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- NAV -->
     <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-8 py-4 flex justify-around items-center z-40">
         <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center gap-1 text-slate-500 nav-active">
             <i data-lucide="list-checks" class="w-6 h-6"></i>
@@ -99,51 +95,57 @@
         </button>
     </nav>
 
-    <!-- MODALS -->
-    <!-- Create Modal -->
+    <!-- HISTORY MODAL (Real Monthly Calendar) -->
+    <div id="history-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
+        <div class="glass w-full max-w-sm p-6 rounded-[2.5rem]">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="changeMonth(-1)" class="p-2 text-slate-400 hover:text-white"><i data-lucide="chevron-left"></i></button>
+                <div class="text-center">
+                    <h3 id="history-month-label" class="font-bold text-lg">Month Year</h3>
+                    <p id="history-task-name" class="text-[10px] text-blue-400 font-bold uppercase tracking-widest"></p>
+                </div>
+                <button onclick="changeMonth(1)" class="p-2 text-slate-400 hover:text-white"><i data-lucide="chevron-right"></i></button>
+            </div>
+            
+            <div class="cal-grid mb-4">
+                <div class="cal-header">S</div><div class="cal-header">M</div><div class="cal-header">T</div>
+                <div class="cal-header">W</div><div class="cal-header">T</div><div class="cal-header">F</div>
+                <div class="cal-header">S</div>
+            </div>
+            <div id="calendar-body" class="cal-grid mb-6"></div>
+            
+            <button onclick="closeHistory()" class="w-full bg-slate-800 py-4 rounded-2xl font-bold">Close</button>
+        </div>
+    </div>
+
+    <!-- CREATE MODAL -->
     <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 class="text-xl font-bold mb-6">Track New Task</h3>
-            <input type="text" id="h-name" placeholder="Name..." class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white outline-none ring-2 ring-transparent focus:ring-blue-500">
-            
+            <h3 class="text-xl font-bold mb-6">New Task</h3>
+            <input type="text" id="h-name" placeholder="E.g. Morning Gym" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white outline-none">
             <div class="flex gap-2 mb-6 p-1 bg-slate-900 rounded-xl">
                 <button onclick="setTaskType('habit')" id="btn-type-habit" class="flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600">Habit</button>
                 <button onclick="setTaskType('skill')" id="btn-type-skill" class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-500">Skill</button>
             </div>
-
-            <div class="flex gap-4">
-                <button onclick="closeModal()" class="flex-1 text-slate-400 font-bold">Cancel</button>
-                <button onclick="saveHabit()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold shadow-lg">Create</button>
-            </div>
+            <button onclick="saveHabit()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold mb-2">Create</button>
+            <button onclick="closeModal()" class="w-full text-slate-500 font-bold text-sm">Cancel</button>
         </div>
     </div>
 
-    <!-- History Calendar Modal -->
-    <div id="history-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
-        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 id="history-title" class="text-xl font-bold mb-2">History Log</h3>
-            <p class="text-xs text-slate-400 mb-6 uppercase tracking-widest">Tap dates to mark completion</p>
-            <div id="history-calendar" class="cal-grid mb-8"></div>
-            <button onclick="closeHistory()" class="w-full bg-slate-800 py-4 rounded-2xl font-bold">Done</button>
-        </div>
-    </div>
-
-    <!-- Sync Modal -->
+    <!-- SYNC MODAL -->
     <div id="sync-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 class="text-xl font-bold mb-2">Sync Account</h3>
-            <input type="text" id="sync-key" placeholder="Enter Sync Key..." class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white text-center font-bold tracking-widest">
+            <h3 class="text-xl font-bold mb-2">Sync Devices</h3>
+            <input type="text" id="sync-key" placeholder="Enter Secret Key" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white text-center font-bold tracking-widest">
             <button onclick="connectSync()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold mb-4">Connect</button>
-            <button onclick="document.getElementById('sync-modal').style.display='none'" class="w-full text-slate-500 text-xs uppercase font-bold">Close</button>
+            <button onclick="document.getElementById('sync-modal').style.display='none'" class="w-full text-slate-500 text-xs font-bold">Close</button>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Config (Your Config)
         const firebaseConfig = {
             apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo",
             authDomain: "tracker-9b741.firebaseapp.com",
@@ -162,31 +164,75 @@
         let unsubscribe = null;
         let chart = null;
 
+        // Calendar State
+        let viewDate = new Date();
+        let activeHistoryId = null;
+
         window.onload = () => {
             if (syncKey) {
                 document.getElementById('sync-key').value = syncKey;
                 setupSync(syncKey);
-            } else {
-                render();
-            }
+            } else { render(); }
             lucide.createIcons();
             initChart();
         };
 
-        // --- NAVIGATION ---
-        window.switchTab = (tab) => {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
-            
-            const activeTab = document.getElementById(`tab-${tab}`);
-            activeTab.classList.add('active');
-            document.getElementById(`nav-${tab}`).classList.add('nav-active');
-            
-            gsap.fromTo(activeTab, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 });
-            if(tab === 'dashboard') updateDashboard();
+        // --- CALENDAR LOGIC ---
+        window.openHistory = (id) => {
+            activeHistoryId = id;
+            viewDate = new Date();
+            renderCalendar();
+            document.getElementById('history-modal').style.display = 'flex';
         };
 
-        // --- CORE LOGIC ---
+        window.changeMonth = (dir) => {
+            viewDate.setMonth(viewDate.getMonth() + dir);
+            renderCalendar();
+        };
+
+        function renderCalendar() {
+            const h = habits.find(x => x.id === activeHistoryId);
+            document.getElementById('history-task-name').innerText = h.name;
+            
+            const month = viewDate.getMonth();
+            const year = viewDate.getFullYear();
+            
+            document.getElementById('history-month-label').innerText = 
+                new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(viewDate);
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const calBody = document.getElementById('calendar-body');
+            calBody.innerHTML = '';
+
+            // Empty slots for previous month
+            for (let i = 0; i < firstDay; i++) {
+                calBody.innerHTML += `<div class="cal-day empty"></div>`;
+            }
+
+            // Actual Days
+            const today = new Date().toISOString().split('T')[0];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const isActive = h.logs.includes(dStr);
+                const isToday = dStr === today;
+                
+                const dayEl = document.createElement('div');
+                dayEl.className = `cal-day ${isActive ? 'selected' : ''} ${isToday ? 'today-marker' : ''}`;
+                dayEl.innerText = day;
+                dayEl.onclick = async () => {
+                    const idx = h.logs.indexOf(dStr);
+                    if(idx > -1) h.logs.splice(idx, 1);
+                    else h.logs.push(dStr);
+                    renderCalendar();
+                    render();
+                    await pushData();
+                };
+                calBody.appendChild(dayEl);
+            }
+        }
+
+        // --- FIREBASE SYNC ---
         async function setupSync(key) {
             updateStatus('syncing');
             const docRef = doc(db, "trackers", key);
@@ -205,84 +251,37 @@
             await setDoc(doc(db, "trackers", syncKey), { habits });
         }
 
-        window.setTaskType = (type) => {
-            currentType = type;
-            document.getElementById('btn-type-habit').className = type === 'habit' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600' : 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-500';
-            document.getElementById('btn-type-skill').className = type === 'skill' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600' : 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-500';
-        };
-
+        // --- TRACKING LOGIC ---
         window.saveHabit = async () => {
             const name = document.getElementById('h-name').value;
             if(!name) return;
-            habits.push({
-                id: Date.now().toString(),
-                name,
-                type: currentType,
-                logs: [],
-                created: getToday()
-            });
-            render();
-            closeModal();
-            await pushData();
+            habits.push({ id: Date.now().toString(), name, type: currentType, logs: [] });
+            render(); closeModal(); await pushData();
         };
 
         window.toggleToday = async (id) => {
             const h = habits.find(x => x.id === id);
-            const today = getToday();
+            const today = new Date().toISOString().split('T')[0];
             const idx = h.logs.indexOf(today);
             if(idx > -1) h.logs.splice(idx, 1);
             else {
                 h.logs.push(today);
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.8 } });
+                confetti({ particleCount: 100, origin: { y: 0.8 } });
             }
-            render();
-            await pushData();
+            render(); await pushData();
         };
 
         window.deleteHabit = async (id) => {
-            if(!confirm('Delete this?')) return;
+            if(!confirm('Delete?')) return;
             habits = habits.filter(h => h.id !== id);
-            render();
-            await pushData();
+            render(); await pushData();
         };
 
-        // --- HISTORY BACK-TRACKING ---
-        let currentHistoryId = null;
-        window.openHistory = (id) => {
-            currentHistoryId = id;
-            const h = habits.find(x => x.id === id);
-            document.getElementById('history-title').innerText = h.name;
-            const cal = document.getElementById('history-calendar');
-            cal.innerHTML = '';
-            
-            // Generate last 28 days for history
-            for(let i=27; i>=0; i--) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                const dStr = d.toISOString().split('T')[0];
-                const active = h.logs.includes(dStr);
-                const dayEl = document.createElement('div');
-                dayEl.className = `cal-day ${active ? 'selected' : ''}`;
-                dayEl.innerText = d.getDate();
-                dayEl.onclick = async () => {
-                    const idx = h.logs.indexOf(dStr);
-                    if(idx > -1) h.logs.splice(idx, 1);
-                    else h.logs.push(dStr);
-                    openHistory(id); // re-render
-                    await pushData();
-                };
-                cal.appendChild(dayEl);
-            }
-            document.getElementById('history-modal').style.display = 'flex';
-        };
-
-        window.closeHistory = () => document.getElementById('history-modal').style.display = 'none';
-
-        // --- UI RENDER ---
         function render() {
-            const hList = document.getElementById('habits-list');
-            const sList = document.getElementById('skills-list');
-            hList.innerHTML = ''; sList.innerHTML = '';
-            const today = getToday();
+            const hl = document.getElementById('habits-list');
+            const sl = document.getElementById('skills-list');
+            hl.innerHTML = ''; sl.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
 
             habits.forEach(h => {
                 const isDone = h.logs.includes(today);
@@ -294,114 +293,87 @@
                             </button>
                             <div>
                                 <h3 class="font-bold text-sm ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}">${h.name}</h3>
-                                <p class="text-[10px] font-bold text-slate-500">STREAK: ${calculateStreak(h)} DAYS</p>
+                                <p class="text-[9px] font-bold text-slate-500 uppercase">Streak: ${calcStreak(h)} Days</p>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openHistory('${h.id}')" class="p-2 text-slate-500 hover:text-white"><i data-lucide="calendar-days" class="w-4 h-4"></i></button>
+                            <button onclick="openHistory('${h.id}')" class="p-2 text-slate-500 hover:text-white"><i data-lucide="calendar-range" class="w-4 h-4"></i></button>
                             <button onclick="deleteHabit('${h.id}')" class="p-2 text-slate-500 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </div>`;
-                if(h.type === 'habit') hList.innerHTML += card;
-                else sList.innerHTML += card;
+                h.type === 'habit' ? hl.innerHTML += card : sl.innerHTML += card;
             });
             lucide.createIcons();
         }
 
-        // --- DASHBOARD ANALYTICS ---
-        function updateDashboard() {
-            const weekly = calculateSuccessRate(7);
-            const monthly = calculateSuccessRate(30);
-            document.getElementById('stat-weekly').innerText = weekly + '%';
-            document.getElementById('stat-monthly').innerText = monthly + '%';
-            
-            const last7DaysLabels = [];
-            const last7DaysData = [];
-            for(let i=6; i>=0; i--) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                const dStr = d.toISOString().split('T')[0];
-                const count = habits.filter(h => h.logs.includes(dStr)).length;
-                last7DaysLabels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
-                last7DaysData.push(habits.length ? (count / habits.length) * 100 : 0);
-            }
-            
-            chart.data.labels = last7DaysLabels;
-            chart.data.datasets[0].data = last7DaysData;
-            chart.update();
-        }
-
-        function initChart() {
-            const ctx = document.getElementById('analyticsChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        data: [],
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 100, display: false },
-                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10, weight: 'bold' } } }
-                    }
-                }
-            });
-        }
-
-        // --- UTILS ---
-        function getToday() { return new Date().toISOString().split('T')[0]; }
-        
-        function calculateStreak(h) {
-            let streak = 0;
-            let check = new Date();
-            while(h.logs.includes(check.toISOString().split('T')[0])) {
-                streak++;
-                check.setDate(check.getDate() - 1);
-            }
+        function calcStreak(h) {
+            let streak = 0, d = new Date();
+            while(h.logs.includes(d.toISOString().split('T')[0])) { streak++; d.setDate(d.getDate()-1); }
             return streak;
         }
 
-        function calculateSuccessRate(days) {
-            if(!habits.length) return 0;
-            let totalPossible = habits.length * days;
-            let completions = 0;
-            for(let i=0; i<days; i++) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                const dStr = d.toISOString().split('T')[0];
-                completions += habits.filter(h => h.logs.includes(dStr)).length;
-            }
-            return Math.round((completions / totalPossible) * 100);
-        }
-
-        window.connectSync = () => {
-            const key = document.getElementById('sync-key').value.trim();
-            if(!key) return;
-            syncKey = key;
-            localStorage.setItem('strive_sync_key', key);
-            setupSync(key);
-            document.getElementById('sync-modal').style.display = 'none';
+        // --- TABS & DASH ---
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`nav-${tab}`).classList.add('nav-active');
+            if(tab === 'dashboard') updateDashboard();
         };
 
-        function updateStatus(s) {
-            const dot = document.getElementById('sync-dot');
-            const text = document.getElementById('sync-text');
-            if(s === 'syncing') { dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"; text.innerText = "SYNCING..."; }
-            if(s === 'synced') { dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500"; text.innerText = "CLOUD SYNC ACTIVE"; }
-            if(s === 'error') { dot.className = "w-1.5 h-1.5 rounded-full bg-red-500"; text.innerText = "SYNC ERROR"; }
+        function updateDashboard() {
+            const calcRate = (days) => {
+                if(!habits.length) return 0;
+                let done = 0;
+                for(let i=0; i<days; i++) {
+                    const d = new Date(); d.setDate(d.getDate()-i);
+                    done += habits.filter(h => h.logs.includes(d.toISOString().split('T')[0])).length;
+                }
+                return Math.round((done / (habits.length * days)) * 100);
+            };
+            document.getElementById('stat-weekly').innerText = calcRate(7) + '%';
+            document.getElementById('stat-monthly').innerText = calcRate(30) + '%';
+            
+            const labels = [], data = [];
+            for(let i=6; i>=0; i--) {
+                const d = new Date(); d.setDate(d.getDate()-i);
+                labels.push(d.toLocaleDateString('en-US',{weekday:'short'}));
+                const count = habits.filter(h => h.logs.includes(d.toISOString().split('T')[0])).length;
+                data.push(habits.length ? (count/habits.length)*100 : 0);
+            }
+            chart.data.labels = labels; chart.data.datasets[0].data = data; chart.update();
         }
 
+        function initChart() {
+            chart = new Chart(document.getElementById('analyticsChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [{ data: [], borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] },
+                options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { ticks: { color: '#64748b' } } } }
+            });
+        }
+
+        // --- GLOBAL HELPERS ---
+        window.closeHistory = () => document.getElementById('history-modal').style.display = 'none';
+        window.setTaskType = (t) => {
+            currentType = t;
+            document.getElementById('btn-type-habit').className = t==='habit' ? 'flex-1 py-2 rounded-lg bg-blue-600' : 'flex-1 text-slate-500';
+            document.getElementById('btn-type-skill').className = t==='skill' ? 'flex-1 py-2 rounded-lg bg-blue-600' : 'flex-1 text-slate-500';
+        };
         window.openModal = () => document.getElementById('modal').style.display = 'flex';
         window.closeModal = () => document.getElementById('modal').style.display = 'none';
+        window.connectSync = () => {
+            syncKey = document.getElementById('sync-key').value.trim();
+            if(!syncKey) return;
+            localStorage.setItem('strive_sync_key', syncKey);
+            setupSync(syncKey);
+            document.getElementById('sync-modal').style.display = 'none';
+        };
         window.openSync = () => document.getElementById('sync-modal').style.display = 'flex';
+        function updateStatus(s) {
+            const d = document.getElementById('sync-dot'), t = document.getElementById('sync-text');
+            d.className = `w-1.5 h-1.5 rounded-full ${s==='synced'?'bg-emerald-500':s==='syncing'?'bg-amber-500':'bg-red-500'}`;
+            t.innerText = s.toUpperCase();
+        }
     </script>
 </body>
 </html>
