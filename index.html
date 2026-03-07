@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Strive | Real-Time Sync</title>
+    <title>Strive Cloud | Real-Time Sync</title>
     
-    <!-- PWA Settings -->
+    <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href='data:application/json,{"name":"Strive","short_name":"Strive","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#3b82f6"}'>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .day-box { aspect-ratio: 1/1; font-size: 0.65rem; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); cursor: pointer; border: 1px solid transparent; }
+        .day-box { aspect-ratio: 1/1; font-size: 0.65rem; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
         .day-box.active { background: var(--c); color: white; box-shadow: 0 0 15px var(--c); border: none; }
         .day-box.today { border: 1px solid rgba(255,255,255,0.4); }
-        .sync-pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .sortable-ghost { opacity: 0.2; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -32,30 +32,30 @@
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tighter">STRIVE</h1>
-                <div id="sync-status" onclick="openSyncMenu()" class="text-[10px] font-bold mt-1 px-2 py-1 rounded-full bg-slate-800 text-slate-400 cursor-pointer inline-flex items-center gap-1">
-                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
-                    <span id="sync-text">OFFLINE MODE</span>
+                <div id="sync-indicator" onclick="openSync()" class="text-[10px] font-bold mt-1 px-2 py-1 rounded-full bg-slate-800 text-slate-400 cursor-pointer inline-flex items-center gap-1">
+                    <span id="sync-dot" class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    <span id="sync-text">NOT SYNCED</span>
                 </div>
             </div>
-            <button onclick="openModal()" class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/40 active:scale-90 transition-transform">
+            <button onclick="openModal()" class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-transform">
                 <i data-lucide="plus"></i>
             </button>
         </header>
 
-        <!-- Habits -->
+        <!-- List -->
         <div id="habits-list" class="space-y-6"></div>
     </div>
 
     <!-- Modals -->
     <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 id="modal-title" class="text-xl font-bold mb-6">New Habit</h3>
-            <input type="text" id="h-name" placeholder="Name..." class="w-full bg-slate-800 rounded-xl p-4 mb-6 text-white outline-none ring-2 ring-transparent focus:ring-blue-500">
+            <h3 id="modal-title" class="text-xl font-bold mb-6">Create Habit</h3>
+            <input type="text" id="h-name" placeholder="Habit Name..." class="w-full bg-slate-800 rounded-xl p-4 mb-6 text-white outline-none ring-2 ring-transparent focus:ring-blue-500">
             <div class="flex justify-between mb-8">
-                <button onclick="setTheme('#3b82f6')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-white"></button>
-                <button onclick="setTheme('#10b981')" class="w-10 h-10 rounded-full bg-emerald-500"></button>
-                <button onclick="setTheme('#f59e0b')" class="w-10 h-10 rounded-full bg-amber-500"></button>
-                <button onclick="setTheme('#ef4444')" class="w-10 h-10 rounded-full bg-red-500"></button>
+                <button onclick="setTheme('#3b82f6')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-white theme-btn" data-c="#3b82f6"></button>
+                <button onclick="setTheme('#10b981')" class="w-10 h-10 rounded-full bg-emerald-500 border-2 border-transparent theme-btn" data-c="#10b981"></button>
+                <button onclick="setTheme('#f59e0b')" class="w-10 h-10 rounded-full bg-amber-500 border-2 border-transparent theme-btn" data-c="#f59e0b"></button>
+                <button onclick="setTheme('#ef4444')" class="w-10 h-10 rounded-full bg-red-500 border-2 border-transparent theme-btn" data-c="#ef4444"></button>
             </div>
             <div class="flex gap-4">
                 <button onclick="closeModal()" class="flex-1 text-slate-400 font-bold">Cancel</button>
@@ -67,166 +67,189 @@
     <div id="sync-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
             <h3 class="text-xl font-bold mb-2">Cloud Sync</h3>
-            <p class="text-slate-400 text-xs mb-6">Enter a <b>Secret Key</b> to sync PC & Mobile.</p>
-            <input type="text" id="sync-key" placeholder="e.g. MySecret99" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white text-center font-bold">
-            <button onclick="enableSync()" class="w-full bg-white text-black py-4 rounded-2xl font-bold mb-4">Connect Device</button>
+            <p class="text-slate-400 text-xs mb-6">Enter a <b>Sync Key</b> to link devices.</p>
+            <input type="text" id="sync-key" placeholder="e.g. MyPersonalTracker2024" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-white text-center font-bold tracking-widest">
+            <button onclick="connectSync()" class="w-full bg-white text-black py-4 rounded-2xl font-bold mb-4">Connect Now</button>
             <button onclick="document.getElementById('sync-modal').style.display='none'" class="w-full text-slate-500 text-xs">Close</button>
         </div>
     </div>
 
-    <script>
-        let habits = JSON.parse(localStorage.getItem('strive_v8')) || [];
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 1. PASTE YOUR CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo",
+  authDomain: "tracker-9b741.firebaseapp.com",
+  projectId: "tracker-9b741",
+  storageBucket: "tracker-9b741.firebasestorage.app",
+  messagingSenderId: "54605694023",
+  appId: "1:54605694023:web:d243d9854b2f8f78065d62",
+  measurementId: "G-YDX2QVFL9H"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let habits = [];
         let selectedColor = '#3b82f6';
-        let editingId = null;
         let syncKey = localStorage.getItem('strive_sync_key');
+        let unsubscribe = null;
 
-        const list = document.getElementById('habits-list');
-
+        // Initialize
         window.onload = () => {
-            render();
-            if(syncKey) {
+            if (syncKey) {
                 document.getElementById('sync-key').value = syncKey;
-                pullData();
-                setInterval(pullData, 5000); // Sync every 5 seconds
+                setupRealtimeSync(syncKey);
+            } else {
+                render();
             }
             lucide.createIcons();
         };
 
-        function openModal(id = null) {
-            editingId = id;
-            const h = habits.find(x => x.id === id);
-            document.getElementById('h-name').value = h ? h.name : '';
-            document.getElementById('modal').style.display = 'flex';
+        // Real-time Sync Engine
+        function setupRealtimeSync(key) {
+            updateStatus('syncing');
+            const docRef = doc(db, "trackers", key);
+            
+            if (unsubscribe) unsubscribe();
+            
+            unsubscribe = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    habits = docSnap.data().habits || [];
+                    render();
+                    updateStatus('synced');
+                } else {
+                    updateStatus('synced'); // Key exists but empty
+                }
+            }, (error) => {
+                console.error(error);
+                updateStatus('error');
+            });
         }
 
-        function closeModal() { document.getElementById('modal').style.display = 'none'; }
-        function openSyncMenu() { document.getElementById('sync-modal').style.display = 'flex'; }
-        function setTheme(c) { selectedColor = c; }
+        async function syncToCloud() {
+            if (!syncKey) return;
+            const docRef = doc(db, "trackers", syncKey);
+            await setDoc(docRef, { habits: habits });
+        }
 
-        function saveHabit() {
+        // CRUD Operations
+        window.saveHabit = async () => {
             const name = document.getElementById('h-name').value;
             if(!name) return;
-            if(editingId) {
-                const h = habits.find(x => x.id === editingId);
-                h.name = name; h.color = selectedColor;
-            } else {
-                habits.push({ id: Date.now().toString(), name, color: selectedColor, logs: [] });
-            }
-            updateData();
+            
+            habits.push({
+                id: Date.now().toString(),
+                name,
+                color: selectedColor,
+                logs: [],
+                order: habits.length
+            });
+            
+            render();
             closeModal();
-        }
+            await syncToCloud();
+        };
 
-        function toggleDate(hid, dStr) {
-            const h = habits.find(x => x.id === hid.toString());
+        window.toggleDate = async (hid, dStr) => {
+            const h = habits.find(x => x.id === hid);
             const idx = h.logs.indexOf(dStr);
             if(idx > -1) h.logs.splice(idx, 1);
             else {
                 h.logs.push(dStr);
                 if(dStr === getToday()) confetti({ particleCount: 100, origin: { y: 0.8 }, colors: [h.color] });
             }
-            updateData();
+            render();
+            await syncToCloud();
+        };
+
+        window.deleteHabit = async (id) => {
+            if(!confirm('Delete habit?')) return;
+            habits = habits.filter(h => h.id !== id);
+            render();
+            await syncToCloud();
+        };
+
+        // UI Helpers
+        function render() {
+            const list = document.getElementById('habits-list');
+            list.innerHTML = '';
+            const today = getToday();
+            const weekDays = ['S','M','T','W','T','F','S'];
+
+            habits.sort((a,b) => a.order - b.order).forEach(h => {
+                let cal = '';
+                for(let i=13; i>=0; i--) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+                    const active = h.logs.includes(dStr);
+                    cal = `<div onclick="toggleDate('${h.id}','${dStr}')" class="day-box ${active?'active':''} ${dStr===today?'today':''}" style="--c:${h.color}">
+                        <span class="opacity-30 text-[7px] mb-0.5">${weekDays[d.getDay()]}</span>${d.getDate()}
+                    </div>` + cal;
+                }
+
+                list.innerHTML += `
+                    <div class="glass p-5 rounded-[2rem] habit-card" data-id="${h.id}">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background:${h.color}"></span> ${h.name}
+                            </h3>
+                            <button onclick="deleteHabit('${h.id}')" class="text-slate-700 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="calendar-grid">${cal}</div>
+                    </div>`;
+            });
+            lucide.createIcons();
+            initReorder();
         }
+
+        function initReorder() {
+            new Sortable(document.getElementById('habits-list'), {
+                animation: 150,
+                onEnd: () => {
+                    const cards = [...document.querySelectorAll('.habit-card')];
+                    cards.forEach((card, i) => {
+                        const h = habits.find(x => x.id === card.dataset.id);
+                        h.order = i;
+                    });
+                    syncToCloud();
+                }
+            });
+        }
+
+        window.connectSync = () => {
+            const key = document.getElementById('sync-key').value.trim();
+            if(!key) return;
+            syncKey = key;
+            localStorage.setItem('strive_sync_key', key);
+            setupRealtimeSync(key);
+            document.getElementById('sync-modal').style.display = 'none';
+        };
 
         function getToday() {
             const d = new Date();
             return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
         }
 
-        function render() {
-            list.innerHTML = '';
-            const today = getToday();
-            const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-            habits.forEach(h => {
-                let cal = '';
-                for(let i=13; i>=0; i--) {
-                    const d = new Date(); d.setDate(d.getDate() - i);
-                    const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-                    const active = h.logs.includes(dStr);
-                    cal += `<div onclick="toggleDate('${h.id}','${dStr}')" class="day-box ${active?'active':''} ${dStr===today?'today':''}" style="--c:${h.color}">
-                        <span class="opacity-40 text-[8px]">${weekDays[d.getDay()]}</span>${d.getDate()}
-                    </div>`;
-                }
-
-                list.innerHTML += `
-                    <div class="glass p-5 rounded-[2rem]">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold flex items-center gap-2" onclick="openModal('${h.id}')">
-                                <span class="w-2 h-2 rounded-full" style="background:${h.color}"></span> ${h.name}
-                            </h3>
-                            <button onclick="deleteHabit('${h.id}')" class="text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="calendar-grid">${cal}</div>
-                    </div>`;
-            });
-            lucide.createIcons();
-        }
-
-        function deleteHabit(id) {
-            if(confirm('Delete?')) {
-                habits = habits.filter(h => h.id !== id);
-                updateData();
-            }
-        }
-
-        // --- THE SYNC ENGINE ---
-        function updateData() {
-            localStorage.setItem('strive_v8', JSON.stringify(habits));
-            render();
-            if(syncKey) pushData();
-        }
-
-        async function enableSync() {
-            const key = document.getElementById('sync-key').value.trim().toLowerCase();
-            if(!key) return;
-            syncKey = key;
-            localStorage.setItem('strive_sync_key', key);
-            await pullData(); 
-            document.getElementById('sync-modal').style.display = 'none';
-        }
-
-        async function pushData() {
-            updateStatus('syncing');
-            try {
-                await fetch(`https://jsonblob.com/api/jsonBlob/1234567890`, { // Simulated endpoint
-                    method: 'PUT', // We'd use a real ID here
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key: syncKey, data: habits })
-                });
-                // Note: For this demo we use a shared logic. 
-                // Using 'https://api.jsonbin.io/v3/b' is better for production.
-                // Below is a zero-config version using a public relay:
-                await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncKey}`, {
-                    method: 'POST',
-                    body: JSON.stringify(habits)
-                });
-                updateStatus('synced');
-            } catch (e) { updateStatus('error'); }
-        }
-
-        async function pullData() {
-            if(!syncKey) return;
-            try {
-                const res = await fetch(`https://kvdb.io/4yKqPqFkZ8Gg9f9f9f9f9f/${syncKey}`);
-                if(res.ok) {
-                    const data = await res.json();
-                    if(JSON.stringify(data) !== JSON.stringify(habits)) {
-                        habits = data;
-                        localStorage.setItem('strive_v8', JSON.stringify(habits));
-                        render();
-                    }
-                    updateStatus('synced');
-                }
-            } catch (e) { updateStatus('error'); }
-        }
-
         function updateStatus(s) {
             const dot = document.getElementById('sync-dot');
             const text = document.getElementById('sync-text');
-            if(s === 'syncing') { dot.className = "w-2 h-2 rounded-full bg-amber-500 sync-pulse"; text.innerText = "SYNCING..."; }
-            if(s === 'synced') { dot.className = "w-2 h-2 rounded-full bg-emerald-500"; text.innerText = "CLOUD SYNC ACTIVE"; }
-            if(s === 'error') { dot.className = "w-2 h-2 rounded-full bg-red-500"; text.innerText = "SYNC ERROR"; }
+            if(s === 'syncing') { dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"; text.innerText = "SYNCING..."; }
+            if(s === 'synced') { dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500"; text.innerText = "CLOUD SYNC ACTIVE"; }
+            if(s === 'error') { dot.className = "w-1.5 h-1.5 rounded-full bg-red-500"; text.innerText = "FIREBASE ERROR"; }
         }
+
+        // Global Modal Logic
+        window.openModal = () => document.getElementById('modal').style.display = 'flex';
+        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+        window.openSync = () => document.getElementById('sync-modal').style.display = 'flex';
+        window.setTheme = (c) => {
+            selectedColor = c;
+            document.querySelectorAll('.theme-btn').forEach(b => b.style.borderColor = b.dataset.c === c ? 'white' : 'transparent');
+        };
     </script>
 </body>
 </html>
