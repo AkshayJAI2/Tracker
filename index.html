@@ -3,158 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Strive Pro | Analytics Hub</title>
-    
+    <title>Strive Pro | Identity Architect</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .nav-active { color: #3b82f6 !important; transform: translateY(-2px); }
+        .pillar-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pillar-character { border-left: 4px solid #a855f7; }
+        .pillar-health { border-left: 4px solid #10b981; }
+        .pillar-wealth { border-left: 4px solid #f59e0b; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        
-        /* Calendar Styling */
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .cal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.75rem; cursor: pointer; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
-        .cal-day.empty { background: transparent; cursor: default; }
-        .cal-day.selected { background: #3b82f6; color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); border: none; }
-        .cal-day.today-marker { border: 1px solid #3b82f6; }
-        
-        .stat-card { background: linear-gradient(145deg, rgba(30,41,59,0.5), rgba(15,23,42,0.8)); border: 1px solid rgba(255,255,255,0.05); }
+        .nav-active { color: #3b82f6 !important; }
+        .cal-day.selected { background: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
     </style>
 </head>
 <body class="pb-28">
 
-    <!-- TOP HEADER -->
-    <header class="p-6 flex justify-between items-center max-w-2xl mx-auto">
+    <!-- HEADER -->
+    <header class="p-6 max-w-2xl mx-auto flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-blue-500">PRO</span></h1>
-            <div id="sync-indicator" onclick="openSync()" class="text-[10px] font-bold mt-1 px-2 py-1 rounded-full bg-slate-800 text-slate-400 cursor-pointer inline-flex items-center gap-1">
-                <span id="sync-dot" class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                <span id="sync-text">NOT SYNCED</span>
-            </div>
+            <p class="text-[10px] font-bold text-blue-500 tracking-[0.2em] uppercase">Identity Architect</p>
+            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-slate-500">PRO</span></h1>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openModal('habit')" class="bg-slate-800 text-white text-[10px] font-bold px-3 py-2 rounded-xl flex items-center gap-1">+ HABIT</button>
-            <button onclick="openModal('skill')" class="bg-blue-600 text-white text-[10px] font-bold px-3 py-2 rounded-xl flex items-center gap-1">+ SKILL</button>
-        </div>
+        <button onclick="openSync()" class="p-2 bg-slate-800 rounded-full">
+            <div id="sync-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
+        </button>
     </header>
 
-    <!-- TRACKING SECTION -->
-    <main id="tab-tracking" class="tab-content active p-4 max-w-2xl mx-auto">
-        <!-- Habits Section -->
-        <section class="mb-10">
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="refresh-cw" class="w-4 h-4 text-emerald-500"></i> Daily Habits
-            </h2>
-            <div id="habits-list" class="space-y-3"></div>
-        </section>
-
-        <!-- Skills Section -->
-        <section>
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="flame" class="w-4 h-4 text-orange-500"></i> Skill Development
-            </h2>
-            <div id="skills-list" class="space-y-3"></div>
-        </section>
-    </main>
-
-    <!-- ANALYTICS SECTION -->
-    <main id="tab-dashboard" class="tab-content p-4 max-w-2xl mx-auto">
-        <h2 class="text-2xl font-bold mb-6">Deep Analysis</h2>
+    <!-- MAIN TRACKING -->
+    <main id="tab-tracking" class="tab-content active p-4 max-w-2xl mx-auto space-y-8">
         
-        <!-- Triple Scope Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="stat-card p-4 rounded-3xl">
-                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Today</p>
-                <div class="flex justify-between items-end">
-                    <h3 id="stat-daily" class="text-2xl font-extrabold text-white">0%</h3>
-                    <i data-lucide="check-circle" class="w-4 h-4 text-blue-500 mb-1"></i>
-                </div>
+        <!-- CHARACTER PILLAR -->
+        <section>
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-sm font-black text-purple-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i> Character (Awareness)
+                </h2>
+                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 01</span>
             </div>
-            <div class="stat-card p-4 rounded-3xl">
-                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Weekly Avg</p>
-                <div class="flex justify-between items-end">
-                    <h3 id="stat-weekly" class="text-2xl font-extrabold text-emerald-400">0%</h3>
-                    <i data-lucide="bar-chart" class="w-4 h-4 text-emerald-500 mb-1"></i>
-                </div>
+            <div id="list-character" class="space-y-3"></div>
+        </section>
+
+        <!-- HEALTH PILLAR -->
+        <section>
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-sm font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4"></i> Health (Vitality)
+                </h2>
+                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 02</span>
             </div>
-            <div class="stat-card p-4 rounded-3xl">
-                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Monthly Goal</p>
-                <div class="flex justify-between items-end">
-                    <h3 id="stat-monthly" class="text-2xl font-extrabold text-orange-400">0%</h3>
-                    <i data-lucide="calendar" class="w-4 h-4 text-orange-500 mb-1"></i>
-                </div>
+            <div id="list-health" class="space-y-3"></div>
+        </section>
+
+        <!-- WEALTH PILLAR -->
+        <section>
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-sm font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> Wealth (Skills)
+                </h2>
+                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 03</span>
+            </div>
+            <div id="list-wealth" class="space-y-3"></div>
+        </section>
+
+        <button onclick="openModal()" class="w-full py-4 rounded-2xl bg-slate-900 border border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest hover:bg-slate-800">
+            + Add New Objective
+        </button>
+    </main>
+
+    <!-- ANALYTICS -->
+    <main id="tab-stats" class="tab-content p-4 max-w-2xl mx-auto">
+        <h2 class="text-2xl font-bold mb-6">Performance</h2>
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="glass p-4 rounded-2xl text-center">
+                <p class="text-[10px] font-bold text-slate-500 mb-1">DAILY</p>
+                <div id="stat-daily" class="text-xl font-black">0%</div>
+            </div>
+            <div class="glass p-4 rounded-2xl text-center">
+                <p class="text-[10px] font-bold text-slate-500 mb-1">STREAK</p>
+                <div id="stat-streak" class="text-xl font-black text-orange-500">0</div>
+            </div>
+            <div class="glass p-4 rounded-2xl text-center">
+                <p class="text-[10px] font-bold text-slate-500 mb-1">SYNC</p>
+                <div class="flex justify-center"><i data-lucide="cloud-check" class="w-5 h-5 text-emerald-500"></i></div>
             </div>
         </div>
-
-        <div class="glass p-6 rounded-[2rem] mb-6">
-            <p class="text-xs font-bold text-slate-500 uppercase mb-6">Weekly Performance Trend</p>
-            <canvas id="analyticsChart" height="200"></canvas>
+        <div class="glass p-6 rounded-[2rem]">
+            <canvas id="trendChart"></canvas>
         </div>
     </main>
 
-    <!-- NAVIGATION BAR -->
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-10 py-5 flex justify-around items-center z-40 rounded-t-[2.5rem]">
-        <button onclick="switchTab('tracking')" id="nav-tracking" class="flex flex-col items-center gap-1 text-slate-500 nav-active transition-all">
-            <i data-lucide="layout-grid" class="w-6 h-6"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Track</span>
-        </button>
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-slate-500 transition-all">
-            <i data-lucide="pie-chart" class="w-6 h-6"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Stats</span>
-        </button>
+    <!-- NAV -->
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-12 py-6 flex justify-around items-center z-40 rounded-t-[2.5rem]">
+        <button onclick="switchTab('tracking')" id="nav-tracking" class="nav-active"><i data-lucide="target" class="w-6 h-6"></i></button>
+        <button onclick="switchTab('stats')" id="nav-stats" class="text-slate-500"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></button>
     </nav>
 
-    <!-- CREATE/EDIT MODAL -->
+    <!-- MODALS (Unified for simplicity) -->
     <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
-        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 id="modal-title" class="text-xl font-bold mb-6">New Task</h3>
-            <div class="space-y-4">
-                <input type="text" id="h-name" placeholder="Name your quest..." class="w-full bg-slate-800 border-none rounded-2xl p-4 text-white outline-none focus:ring-2 ring-blue-500">
-                <div class="flex gap-4 pt-4">
-                    <button onclick="closeModal()" class="flex-1 text-slate-400 font-bold">Cancel</button>
-                    <button onclick="handleSave()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold shadow-lg">Save</button>
-                </div>
+        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] space-y-4">
+            <h3 class="text-xl font-bold">New Objective</h3>
+            <input type="text" id="obj-name" placeholder="Objective name..." class="w-full bg-slate-800 rounded-xl p-4 text-white outline-none">
+            <select id="obj-pillar" class="w-full bg-slate-800 rounded-xl p-4 text-white outline-none">
+                <option value="character">Character</option>
+                <option value="health">Health</option>
+                <option value="wealth">Wealth</option>
+            </select>
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 text-slate-500 font-bold">Cancel</button>
+                <button onclick="saveObjective()" class="flex-1 bg-blue-600 py-4 rounded-xl font-bold">Add</button>
             </div>
-        </div>
-    </div>
-
-    <!-- CALENDAR HISTORY MODAL -->
-    <div id="history-modal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
-        <div class="glass w-full max-w-sm p-6 rounded-[2.5rem]">
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="changeMonth(-1)" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="chevron-left"></i></button>
-                <div class="text-center">
-                    <h3 id="history-month-label" class="font-bold">Month 2024</h3>
-                    <p id="history-task-name" class="text-[9px] text-blue-400 font-bold uppercase"></p>
-                </div>
-                <button onclick="changeMonth(1)" class="p-2 bg-slate-800 rounded-lg"><i data-lucide="chevron-right"></i></button>
-            </div>
-            <div class="cal-grid mb-2">
-                <div class="text-[10px] text-center font-bold text-slate-600">S</div><div class="text-[10px] text-center font-bold text-slate-600">M</div><div class="text-[10px] text-center font-bold text-slate-600">T</div>
-                <div class="text-[10px] text-center font-bold text-slate-600">W</div><div class="text-[10px] text-center font-bold text-slate-600">T</div><div class="text-[10px] text-center font-bold text-slate-600">F</div>
-                <div class="text-[10px] text-center font-bold text-slate-600">S</div>
-            </div>
-            <div id="calendar-body" class="cal-grid mb-8"></div>
-            <button onclick="closeHistory()" class="w-full bg-white text-black py-4 rounded-2xl font-bold">Close History</button>
         </div>
     </div>
 
     <!-- SYNC MODAL -->
-    <div id="sync-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
+    <div id="sync-modal" class="fixed inset-0 bg-black/90 hidden z-50 p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 class="text-xl font-bold mb-2">Cloud Connect</h3>
-            <p class="text-slate-500 text-xs mb-6">Use one key for all your devices.</p>
-            <input type="text" id="sync-key" placeholder="Enter Key..." class="w-full bg-slate-800 rounded-2xl p-4 mb-4 text-white text-center font-bold tracking-widest">
-            <button onclick="connectSync()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold mb-4">Sync Now</button>
-            <button onclick="document.getElementById('sync-modal').style.display='none'" class="w-full text-slate-500 font-bold text-xs uppercase">Close</button>
+            <h3 class="text-xl font-bold mb-4">Cloud Sync</h3>
+            <input type="text" id="sync-key" placeholder="Enter Secret Key" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-center font-mono">
+            <button onclick="connectSync()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Initialize Sync</button>
         </div>
     </div>
 
@@ -162,258 +134,142 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo",
-            authDomain: "tracker-9b741.firebaseapp.com",
-            projectId: "tracker-9b741",
-            storageBucket: "tracker-9b741.firebasestorage.app",
-            messagingSenderId: "54605694023",
-            appId: "1:54605694023:web:d243d9854b2f8f78065d62"
-        };
-
+        // Your Config
+        const firebaseConfig = { apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo", authDomain: "tracker-9b741.firebaseapp.com", projectId: "tracker-9b741", storageBucket: "tracker-9b741.firebasestorage.app", messagingSenderId: "54605694023", appId: "1:54605694023:web:d243d9854b2f8f78065d62" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let habits = [];
-        let syncKey = localStorage.getItem('strive_sync_key');
-        let currentType = 'habit'; // 'habit' or 'skill'
-        let editingId = null;
-        let unsubscribe = null;
-        let chart = null;
+        let items = [];
+        let syncKey = localStorage.getItem('strive_pro_key');
 
-        // Calendar Logic State
-        let viewDate = new Date();
-        let activeHistoryId = null;
+        // INITIAL SETUP (The default items you requested)
+        const defaults = [
+            { id: '1', name: 'Thought Awareness', pillar: 'character', logs: [] },
+            { id: '2', name: 'Positive Vocabulary', pillar: 'character', logs: [] },
+            { id: '3', name: 'Reading/Podcasts', pillar: 'character', logs: [] },
+            { id: '4', name: 'Exercise (Strength/Cardio)', pillar: 'health', logs: [] },
+            { id: '5', name: 'Clean Diet', pillar: 'health', logs: [] },
+            { id: '6', name: 'Deep Breathing', pillar: 'health', logs: [] },
+            { id: '7', name: 'Gen AI Practice', pillar: 'wealth', logs: [] },
+            { id: '8', name: 'Market Trading Study', pillar: 'wealth', logs: [] },
+            { id: '9', name: 'Business Outreach', pillar: 'wealth', logs: [] }
+        ];
 
         window.onload = () => {
             if (syncKey) {
-                document.getElementById('sync-key').value = syncKey;
                 setupSync(syncKey);
-            } else { render(); }
+            } else {
+                items = JSON.parse(localStorage.getItem('strive_items')) || defaults;
+                render();
+            }
             lucide.createIcons();
-            initChart();
         };
 
-        // --- NAVIGATION & TABS ---
-        window.switchTab = (tab) => {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('nav-active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`nav-${tab}`).classList.add('nav-active');
-            if(tab === 'dashboard') updateDashboard();
-        };
-
-        // --- SYNC ENGINE ---
         async function setupSync(key) {
-            updateStatus('syncing');
             const docRef = doc(db, "trackers", key);
-            if (unsubscribe) unsubscribe();
-            unsubscribe = onSnapshot(docRef, (snap) => {
+            onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
-                    habits = snap.data().habits || [];
+                    items = snap.data().items || [];
                     render();
-                    updateStatus('synced');
+                    document.getElementById('sync-dot').className = "w-2 h-2 rounded-full bg-emerald-500";
                 }
-            }, () => updateStatus('error'));
+            });
         }
 
-        async function pushData() {
-            if (!syncKey) return;
-            await setDoc(doc(db, "trackers", syncKey), { habits });
-        }
-
-        // --- CORE LOGIC (CRUD) ---
-        window.openModal = (type, id = null) => {
-            editingId = id;
-            currentType = type;
-            const input = document.getElementById('h-name');
-            const title = document.getElementById('modal-title');
-            
-            if(id) {
-                const item = habits.find(x => x.id === id);
-                input.value = item.name;
-                title.innerText = `Edit ${item.type}`;
-            } else {
-                input.value = '';
-                title.innerText = `New ${type}`;
-            }
-            document.getElementById('modal').style.display = 'flex';
-        };
-
-        window.handleSave = async () => {
-            const name = document.getElementById('h-name').value;
-            if(!name) return;
-
-            if(editingId) {
-                const item = habits.find(x => x.id === editingId);
-                item.name = name;
-            } else {
-                habits.push({ id: Date.now().toString(), name, type: currentType, logs: [] });
-            }
-            
-            render(); closeModal(); await pushData();
-        };
-
-        window.toggleToday = async (id) => {
-            const h = habits.find(x => x.id === id);
+        window.toggleItem = async (id) => {
+            const item = items.find(i => i.id === id);
             const today = new Date().toISOString().split('T')[0];
-            const idx = h.logs.indexOf(today);
-            if(idx > -1) h.logs.splice(idx, 1);
-            else {
-                h.logs.push(today);
-                confetti({ particleCount: 150, origin: { y: 0.8 } });
-            }
-            render(); await pushData();
-        };
-
-        window.deleteHabit = async (id) => {
-            if(!confirm('Delete permanently?')) return;
-            habits = habits.filter(h => h.id !== id);
-            render(); await pushData();
-        };
-
-        // --- CALENDAR ENGINE ---
-        window.openHistory = (id) => {
-            activeHistoryId = id;
-            viewDate = new Date();
-            renderCalendar();
-            document.getElementById('history-modal').style.display = 'flex';
-        };
-
-        window.changeMonth = (dir) => {
-            viewDate.setMonth(viewDate.getMonth() + dir);
-            renderCalendar();
-        };
-
-        function renderCalendar() {
-            const h = habits.find(x => x.id === activeHistoryId);
-            document.getElementById('history-task-name').innerText = h.name;
-            const month = viewDate.getMonth(), year = viewDate.getFullYear();
-            document.getElementById('history-month-label').innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(viewDate);
+            const idx = item.logs.indexOf(today);
             
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const calBody = document.getElementById('calendar-body');
-            calBody.innerHTML = '';
-
-            for (let i = 0; i < firstDay; i++) calBody.innerHTML += `<div class="cal-day empty"></div>`;
-            const today = new Date().toISOString().split('T')[0];
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                const isActive = h.logs.includes(dStr);
-                const dayEl = document.createElement('div');
-                dayEl.className = `cal-day ${isActive ? 'selected' : ''} ${dStr === today ? 'today-marker' : ''}`;
-                dayEl.innerText = day;
-                dayEl.onclick = async () => {
-                    const idx = h.logs.indexOf(dStr);
-                    if(idx > -1) h.logs.splice(idx, 1); else h.logs.push(dStr);
-                    renderCalendar(); render(); await pushData();
-                };
-                calBody.appendChild(dayEl);
+            if(idx > -1) {
+                item.logs.splice(idx, 1);
+            } else {
+                item.logs.push(today);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 }, colors: ['#3b82f6', '#a855f7', '#10b981'] });
             }
+            
+            save();
+            render();
+        };
+
+        function save() {
+            localStorage.setItem('strive_items', JSON.stringify(items));
+            if (syncKey) setDoc(doc(db, "trackers", syncKey), { items });
         }
 
-        // --- RENDER UI ---
         function render() {
-            const hl = document.getElementById('habits-list'), sl = document.getElementById('skills-list');
-            hl.innerHTML = ''; sl.innerHTML = '';
+            const containers = {
+                character: document.getElementById('list-character'),
+                health: document.getElementById('list-health'),
+                wealth: document.getElementById('list-wealth')
+            };
+
+            Object.values(containers).forEach(c => c.innerHTML = '');
             const today = new Date().toISOString().split('T')[0];
 
-            habits.forEach(h => {
-                const isDone = h.logs.includes(today);
-                const card = `
-                    <div class="glass p-4 rounded-3xl flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <button onclick="toggleToday('${h.id}')" class="w-10 h-10 rounded-2xl border-2 transition-all flex items-center justify-center ${isDone ? 'bg-blue-600 border-blue-600' : 'border-slate-800'}">
-                                ${isDone ? '<i data-lucide="check" class="w-6 h-6 text-white"></i>' : ''}
-                            </button>
-                            <div>
-                                <h3 class="font-bold text-sm ${isDone ? 'line-through text-slate-600' : 'text-slate-100'}">${h.name}</h3>
-                                <p class="text-[9px] font-bold text-slate-500 uppercase">Streak: ${calcStreak(h)} Days</p>
-                            </div>
+            items.forEach(item => {
+                const isDone = item.logs.includes(today);
+                const el = document.createElement('div');
+                el.className = `pillar-card pillar-${item.pillar} glass p-4 rounded-2xl flex items-center justify-between ${isDone ? 'opacity-50' : ''}`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleItem('${item.id}')" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${isDone ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20' : 'border-slate-700'}">
+                            ${isDone ? '<i data-lucide="check" class="text-white w-6 h-6"></i>' : ''}
+                        </button>
+                        <div>
+                            <h3 class="text-sm font-bold ${isDone ? 'line-through' : ''}">${item.name}</h3>
+                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Current Streak: ${calcStreak(item)} Days</p>
                         </div>
-                        <div class="flex gap-1">
-                            <button onclick="openModal('${h.type}', '${h.id}')" class="p-2 text-slate-600 hover:text-white"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="openHistory('${h.id}')" class="p-2 text-slate-600 hover:text-white"><i data-lucide="calendar-days" class="w-4 h-4"></i></button>
-                            <button onclick="deleteHabit('${h.id}')" class="p-2 text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>`;
-                h.type === 'habit' ? hl.innerHTML += card : sl.innerHTML += card;
+                    </div>
+                    <button onclick="deleteItem('${item.id}')" class="p-2 text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                containers[item.pillar].appendChild(el);
             });
             lucide.createIcons();
         }
 
-        function calcStreak(h) {
-            let streak = 0, d = new Date();
-            while(h.logs.includes(d.toISOString().split('T')[0])) { streak++; d.setDate(d.getDate()-1); }
+        function calcStreak(item) {
+            let streak = 0;
+            let d = new Date();
+            while(item.logs.includes(d.toISOString().split('T')[0])) {
+                streak++;
+                d.setDate(d.getDate() - 1);
+            }
             return streak;
         }
 
-        // --- SEPARATE ANALYTICS SCOPES ---
-        function updateDashboard() {
-            const today = new Date().toISOString().split('T')[0];
-            
-            // 1. Daily Analytics
-            const dailyDone = habits.filter(h => h.logs.includes(today)).length;
-            document.getElementById('stat-daily').innerText = habits.length ? Math.round((dailyDone / habits.length) * 100) + '%' : '0%';
+        // Global functions for buttons
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.add('text-slate-500'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`nav-${tab}`).classList.remove('text-slate-500');
+            document.getElementById(`nav-${tab}`).classList.add('nav-active');
+        };
 
-            // 2. Weekly Analytics (Last 7 Floating Days)
-            let weeklyPossible = habits.length * 7, weeklyDone = 0;
-            for(let i=0; i<7; i++) {
-                const d = new Date(); d.setDate(d.getDate()-i);
-                weeklyDone += habits.filter(h => h.logs.includes(d.toISOString().split('T')[0])).length;
-            }
-            document.getElementById('stat-weekly').innerText = weeklyPossible ? Math.round((weeklyDone / weeklyPossible) * 100) + '%' : '0%';
-
-            // 3. Monthly Analytics (Current Calendar Month)
-            const now = new Date();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            let monthlyPossible = habits.length * daysInMonth, monthlyDone = 0;
-            habits.forEach(h => {
-                h.logs.forEach(log => {
-                    const logDate = new Date(log);
-                    if(logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear()) monthlyDone++;
-                });
-            });
-            document.getElementById('stat-monthly').innerText = monthlyPossible ? Math.round((monthlyDone / monthlyPossible) * 100) + '%' : '0%';
-
-            // 4. Trend Chart (Last 7 Days)
-            const labels = [], data = [];
-            for(let i=6; i>=0; i--) {
-                const d = new Date(); d.setDate(d.getDate()-i);
-                labels.push(d.toLocaleDateString('en-US',{weekday:'short'}));
-                const count = habits.filter(h => h.logs.includes(d.toISOString().split('T')[0])).length;
-                data.push(habits.length ? (count/habits.length)*100 : 0);
-            }
-            chart.data.labels = labels; chart.data.datasets[0].data = data; chart.update();
-        }
-
-        function initChart() {
-            chart = new Chart(document.getElementById('analyticsChart'), {
-                type: 'line',
-                data: { labels: [], datasets: [{ data: [], borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] },
-                options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { ticks: { color: '#64748b', font:{size:10} } } } }
-            });
-        }
-
-        // --- HELPERS ---
-        window.closeHistory = () => document.getElementById('history-modal').style.display = 'none';
+        window.openModal = () => document.getElementById('modal').style.display = 'flex';
         window.closeModal = () => document.getElementById('modal').style.display = 'none';
-        window.connectSync = () => {
-            syncKey = document.getElementById('sync-key').value.trim();
-            if(!syncKey) return;
-            localStorage.setItem('strive_sync_key', syncKey);
-            setupSync(syncKey);
-            document.getElementById('sync-modal').style.display = 'none';
+        window.saveObjective = () => {
+            const name = document.getElementById('obj-name').value;
+            const pillar = document.getElementById('obj-pillar').value;
+            if(!name) return;
+            items.push({ id: Date.now().toString(), name, pillar, logs: [] });
+            save(); render(); closeModal();
+        };
+        window.deleteItem = (id) => {
+            if(confirm('Remove this objective?')) {
+                items = items.filter(i => i.id !== id);
+                save(); render();
+            }
         };
         window.openSync = () => document.getElementById('sync-modal').style.display = 'flex';
-        function updateStatus(s) {
-            const d = document.getElementById('sync-dot'), t = document.getElementById('sync-text');
-            d.className = `w-1.5 h-1.5 rounded-full ${s==='synced'?'bg-emerald-500':s==='syncing'?'bg-amber-500':'bg-red-500'}`;
-            t.innerText = s.toUpperCase();
-        }
+        window.connectSync = () => {
+            syncKey = document.getElementById('sync-key').value.trim();
+            if(syncKey) {
+                localStorage.setItem('strive_pro_key', syncKey);
+                location.reload();
+            }
+        };
     </script>
 </body>
 </html>
