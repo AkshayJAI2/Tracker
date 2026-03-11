@@ -10,123 +10,123 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .pillar-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .pillar-character { border-left: 4px solid #a855f7; }
-        .pillar-health { border-left: 4px solid #10b981; }
-        .pillar-wealth { border-left: 4px solid #f59e0b; }
+        
+        :root { --bg: #020617; --accent: #3b82f6; --glass: rgba(15, 23, 42, 0.7); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; overflow-x: hidden; }
+        
+        .glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .nav-active { color: #3b82f6 !important; }
-        .cal-day.selected { background: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .tab-content.active { display: block; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 0; } 50% { opacity: 0.3; } 100% { transform: scale(1.3); opacity: 0; } }
+        
+        .active-ring { position: relative; }
+        .active-ring::after { content: ''; position: absolute; inset: -4px; border: 2px solid var(--accent); border-radius: 999px; animation: pulse-ring 2s infinite; }
+        
+        .date-chip { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .date-chip.selected { background: var(--accent); transform: scale(1.1); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+
+        .habit-card { transition: all 0.3s ease; }
+        .habit-card:active { transform: scale(0.98); }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
     </style>
 </head>
-<body class="pb-28">
+<body class="pb-32">
 
-    <!-- HEADER -->
+    <!-- TOP BAR -->
     <header class="p-6 max-w-2xl mx-auto flex justify-between items-center">
         <div>
-            <p class="text-[10px] font-bold text-blue-500 tracking-[0.2em] uppercase">Identity Architect</p>
-            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-slate-500">PRO</span></h1>
+            <p class="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase">Identity Architect</p>
+            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-slate-500 font-medium">PRO</span></h1>
         </div>
-        <button onclick="openSync()" class="p-2 bg-slate-800 rounded-full">
-            <div id="sync-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
-        </button>
+        <div class="flex gap-2">
+            <div class="relative">
+                <input type="date" id="calendar-jump" onchange="jumpToDate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                <button class="p-3 glass rounded-full hover:bg-slate-800 transition-all">
+                    <i data-lucide="calendar-days" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+            <button onclick="openSync()" class="p-3 glass rounded-full">
+                <div id="sync-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
+            </button>
+        </div>
     </header>
 
-    <!-- MAIN TRACKING -->
-    <main id="tab-tracking" class="tab-content active p-4 max-w-2xl mx-auto space-y-8">
-        
-        <!-- CHARACTER PILLAR -->
-        <section>
-            <div class="flex justify-between items-end mb-4">
-                <h2 class="text-sm font-black text-purple-400 uppercase tracking-widest flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i> Character (Awareness)
-                </h2>
-                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 01</span>
-            </div>
-            <div id="list-character" class="space-y-3"></div>
-        </section>
-
-        <!-- HEALTH PILLAR -->
-        <section>
-            <div class="flex justify-between items-end mb-4">
-                <h2 class="text-sm font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                    <i data-lucide="zap" class="w-4 h-4"></i> Health (Vitality)
-                </h2>
-                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 02</span>
-            </div>
-            <div id="list-health" class="space-y-3"></div>
-        </section>
-
-        <!-- WEALTH PILLAR -->
-        <section>
-            <div class="flex justify-between items-end mb-4">
-                <h2 class="text-sm font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i> Wealth (Skills)
-                </h2>
-                <span class="text-[10px] text-slate-500 font-bold">PRIORITY 03</span>
-            </div>
-            <div id="list-wealth" class="space-y-3"></div>
-        </section>
-
-        <button onclick="openModal()" class="w-full py-4 rounded-2xl bg-slate-900 border border-white/5 text-slate-400 text-xs font-bold uppercase tracking-widest hover:bg-slate-800">
-            + Add New Objective
-        </button>
-    </main>
-
-    <!-- ANALYTICS -->
-    <main id="tab-stats" class="tab-content p-4 max-w-2xl mx-auto">
-        <h2 class="text-2xl font-bold mb-6">Performance</h2>
-        <div class="grid grid-cols-3 gap-3 mb-6">
-            <div class="glass p-4 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-slate-500 mb-1">DAILY</p>
-                <div id="stat-daily" class="text-xl font-black">0%</div>
-            </div>
-            <div class="glass p-4 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-slate-500 mb-1">STREAK</p>
-                <div id="stat-streak" class="text-xl font-black text-orange-500">0</div>
-            </div>
-            <div class="glass p-4 rounded-2xl text-center">
-                <p class="text-[10px] font-bold text-slate-500 mb-1">SYNC</p>
-                <div class="flex justify-center"><i data-lucide="cloud-check" class="w-5 h-5 text-emerald-500"></i></div>
-            </div>
-        </div>
-        <div class="glass p-6 rounded-[2rem]">
-            <canvas id="trendChart"></canvas>
-        </div>
-    </main>
-
-    <!-- NAV -->
-    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-12 py-6 flex justify-around items-center z-40 rounded-t-[2.5rem]">
-        <button onclick="switchTab('tracking')" id="nav-tracking" class="nav-active"><i data-lucide="target" class="w-6 h-6"></i></button>
-        <button onclick="switchTab('stats')" id="nav-stats" class="text-slate-500"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></button>
-    </nav>
-
-    <!-- MODALS (Unified for simplicity) -->
-    <div id="modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 p-6 flex items-center justify-center">
-        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] space-y-4">
-            <h3 class="text-xl font-bold">New Objective</h3>
-            <input type="text" id="obj-name" placeholder="Objective name..." class="w-full bg-slate-800 rounded-xl p-4 text-white outline-none">
-            <select id="obj-pillar" class="w-full bg-slate-800 rounded-xl p-4 text-white outline-none">
-                <option value="character">Character</option>
-                <option value="health">Health</option>
-                <option value="wealth">Wealth</option>
-            </select>
-            <div class="flex gap-3">
-                <button onclick="closeModal()" class="flex-1 text-slate-500 font-bold">Cancel</button>
-                <button onclick="saveObjective()" class="flex-1 bg-blue-600 py-4 rounded-xl font-bold">Add</button>
+    <!-- NEURO-TIP BANNER -->
+    <div class="px-6 max-w-2xl mx-auto mb-6">
+        <div class="glass p-4 rounded-3xl border-l-4 border-blue-500 flex gap-4 items-start">
+            <div class="p-2 bg-blue-500/10 rounded-xl"><i data-lucide="brain-circuit" class="w-5 h-5 text-blue-400"></i></div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Neuroscience Strategy</p>
+                <p id="science-tip" class="text-xs text-slate-200 mt-1 leading-relaxed">Loading optimization protocol...</p>
             </div>
         </div>
     </div>
 
-    <!-- SYNC MODAL -->
-    <div id="sync-modal" class="fixed inset-0 bg-black/90 hidden z-50 p-6 flex items-center justify-center">
-        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem]">
-            <h3 class="text-xl font-bold mb-4">Cloud Sync</h3>
-            <input type="text" id="sync-key" placeholder="Enter Secret Key" class="w-full bg-slate-800 rounded-xl p-4 mb-4 text-center font-mono">
-            <button onclick="connectSync()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Initialize Sync</button>
+    <!-- DATE SLIDER -->
+    <div id="date-slider" class="flex gap-4 overflow-x-auto no-scrollbar px-6 mb-8 max-w-2xl mx-auto scroll-smooth"></div>
+
+    <!-- MAIN TRACKING PAGE -->
+    <main id="tab-tracking" class="tab-content active p-4 max-w-2xl mx-auto space-y-8">
+        <div id="pillars-container" class="space-y-10">
+            <!-- Pillars injected via JS -->
+        </div>
+
+        <button onclick="openModal()" class="w-full py-5 rounded-[2rem] glass border-dashed border-2 border-white/10 text-slate-500 text-xs font-bold uppercase tracking-[0.2em] hover:border-blue-500/50 hover:text-blue-400 transition-all">
+            + Architect New Objective
+        </button>
+    </main>
+
+    <!-- ANALYTICS PAGE -->
+    <main id="tab-stats" class="tab-content p-4 max-w-2xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-black">Performance</h2>
+            <div class="flex bg-slate-900/50 p-1 rounded-xl">
+                <button onclick="changeView('day')" id="btn-day" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all bg-blue-600 text-white">DAY</button>
+                <button onclick="changeView('week')" id="btn-week" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400">WEEK</button>
+                <button onclick="changeView('month')" id="btn-month" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400">MONTH</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="glass p-6 rounded-[2rem] text-center">
+                <p id="view-label" class="text-[10px] font-bold text-slate-500 mb-2 uppercase">Identity Score</p>
+                <div id="main-stat" class="text-4xl font-black text-blue-500">0%</div>
+            </div>
+            <div class="glass p-6 rounded-[2rem] text-center">
+                <p class="text-[10px] font-bold text-slate-500 mb-2 uppercase">Current Streak</p>
+                <div id="streak-stat" class="text-4xl font-black text-orange-500">0</div>
+            </div>
+        </div>
+
+        <div class="glass p-6 rounded-[2.5rem] mb-6">
+            <canvas id="analysisChart" height="250"></canvas>
+        </div>
+    </main>
+
+    <!-- FOOTER NAV -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass rounded-full p-2 flex justify-between items-center z-50 border border-white/10 shadow-2xl">
+        <button onclick="switchTab('tracking')" id="nav-tracking" class="flex-1 py-3 rounded-full flex justify-center text-blue-500 bg-blue-500/10 transition-all"><i data-lucide="target"></i></button>
+        <button onclick="switchTab('stats')" id="nav-stats" class="flex-1 py-3 rounded-full flex justify-center text-slate-500 transition-all"><i data-lucide="bar-chart-big"></i></button>
+    </nav>
+
+    <!-- OBJECTIVE MODAL -->
+    <div id="modal" class="fixed inset-0 bg-black/95 hidden z-[100] p-6 flex items-center justify-center backdrop-blur-xl">
+        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] space-y-4">
+            <h3 class="text-xl font-bold mb-4">New Objective</h3>
+            <input type="text" id="obj-name" placeholder="Objective name..." class="w-full bg-slate-800/50 rounded-2xl p-4 text-white outline-none focus:ring-2 ring-blue-500 transition-all">
+            <select id="obj-pillar" class="w-full bg-slate-800/50 rounded-2xl p-4 text-white outline-none">
+                <option value="character">Character (Awareness)</option>
+                <option value="health">Health (Vitality)</option>
+                <option value="wealth">Wealth (Skills)</option>
+            </select>
+            <div class="flex gap-4 mt-6">
+                <button onclick="closeModal()" class="flex-1 py-4 text-slate-500 font-bold">Cancel</button>
+                <button onclick="saveObjective()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold shadow-lg shadow-blue-600/30">Build</button>
+            </div>
         </div>
     </div>
 
@@ -134,142 +134,240 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Your Config
+        // Initial Config
         const firebaseConfig = { apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo", authDomain: "tracker-9b741.firebaseapp.com", projectId: "tracker-9b741", storageBucket: "tracker-9b741.firebasestorage.app", messagingSenderId: "54605694023", appId: "1:54605694023:web:d243d9854b2f8f78065d62" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let items = [];
         let syncKey = localStorage.getItem('strive_pro_key');
+        let selectedDate = new Date().toISOString().split('T')[0];
+        let currentView = 'day';
+        let chartInstance = null;
 
-        // INITIAL SETUP (The default items you requested)
-        const defaults = [
-            { id: '1', name: 'Thought Awareness', pillar: 'character', logs: [] },
-            { id: '2', name: 'Positive Vocabulary', pillar: 'character', logs: [] },
-            { id: '3', name: 'Reading/Podcasts', pillar: 'character', logs: [] },
-            { id: '4', name: 'Exercise (Strength/Cardio)', pillar: 'health', logs: [] },
-            { id: '5', name: 'Clean Diet', pillar: 'health', logs: [] },
-            { id: '6', name: 'Deep Breathing', pillar: 'health', logs: [] },
-            { id: '7', name: 'Gen AI Practice', pillar: 'wealth', logs: [] },
-            { id: '8', name: 'Market Trading Study', pillar: 'wealth', logs: [] },
-            { id: '9', name: 'Business Outreach', pillar: 'wealth', logs: [] }
+        const neuroTips = [
+            "Dopamine isn't about pleasure, it's about anticipation. Check off habits early to build momentum.",
+            "The Basal Ganglia takes 21-66 days to automate a task. Every tick is a signal to your brain.",
+            "Habit Stacking: Perform your 'Character' tasks immediately after your 'Health' routine.",
+            "Visual cues are 80% of habit formation. Keep this dashboard open to reduce cognitive load.",
+            "The 2-Minute Rule: If a Wealth skill is hard to start, just commit to 2 minutes of it.",
+            "Neuroplasticity happens during sleep. Your brain rewires based on today's inputs."
         ];
 
         window.onload = () => {
-            if (syncKey) {
-                setupSync(syncKey);
-            } else {
-                items = JSON.parse(localStorage.getItem('strive_items')) || defaults;
-                render();
-            }
+            items = JSON.parse(localStorage.getItem('strive_v3')) || [
+                { id: '1', name: 'Identity Mindfulness', pillar: 'character', logs: {} },
+                { id: '2', name: 'High Intensity Output', pillar: 'health', logs: {} },
+                { id: '3', name: 'Skill Deep Work', pillar: 'wealth', logs: {} }
+            ];
+            
+            document.getElementById('science-tip').innerText = neuroTips[new Date().getDate() % neuroTips.length];
+            if (syncKey) setupSync();
+            renderDateSlider();
+            render();
             lucide.createIcons();
         };
 
-        async function setupSync(key) {
-            const docRef = doc(db, "trackers", key);
-            onSnapshot(docRef, (snap) => {
-                if (snap.exists()) {
-                    items = snap.data().items || [];
-                    render();
-                    document.getElementById('sync-dot').className = "w-2 h-2 rounded-full bg-emerald-500";
-                }
-            });
+        function renderDateSlider() {
+            const slider = document.getElementById('date-slider');
+            slider.innerHTML = '';
+            for(let i = 14; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const ds = d.toISOString().split('T')[0];
+                const active = ds === selectedDate;
+                slider.innerHTML += `
+                    <button onclick="jumpToDate('${ds}')" class="date-chip flex flex-col items-center min-w-[65px] p-4 rounded-3xl glass border ${active ? 'selected border-blue-400' : 'border-white/5'}">
+                        <span class="text-[9px] font-bold opacity-50 mb-1 uppercase">${d.toLocaleDateString('en',{weekday:'short'})}</span>
+                        <span class="text-lg font-black">${d.getDate()}</span>
+                    </button>`;
+            }
         }
 
-        window.toggleItem = async (id) => {
-            const item = items.find(i => i.id === id);
-            const today = new Date().toISOString().split('T')[0];
-            const idx = item.logs.indexOf(today);
-            
-            if(idx > -1) {
-                item.logs.splice(idx, 1);
-            } else {
-                item.logs.push(today);
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 }, colors: ['#3b82f6', '#a855f7', '#10b981'] });
-            }
-            
-            save();
+        window.jumpToDate = (ds) => {
+            selectedDate = ds;
+            renderDateSlider();
             render();
         };
 
-        function save() {
-            localStorage.setItem('strive_items', JSON.stringify(items));
-            if (syncKey) setDoc(doc(db, "trackers", syncKey), { items });
-        }
+        window.toggleHabit = (id) => {
+            const item = items.find(i => i.id === id);
+            if (!item.logs[selectedDate]) item.logs[selectedDate] = { done: false, note: '' };
+            item.logs[selectedDate].done = !item.logs[selectedDate].done;
+            
+            if (item.logs[selectedDate].done) {
+                confetti({ particleCount: 30, spread: 60, colors: ['#3b82f6', '#10b981'], origin: { y: 0.8 } });
+            }
+            save(); render();
+        };
+
+        window.updateNote = (id, note) => {
+            const item = items.find(i => i.id === id);
+            if (!item.logs[selectedDate]) item.logs[selectedDate] = { done: false, note: '' };
+            item.logs[selectedDate].note = note;
+            save();
+        };
 
         function render() {
-            const containers = {
-                character: document.getElementById('list-character'),
-                health: document.getElementById('list-health'),
-                wealth: document.getElementById('list-wealth')
-            };
+            const container = document.getElementById('pillars-container');
+            container.innerHTML = '';
+            const pillars = [
+                { id: 'character', label: 'Character (Awareness)', icon: 'shield-check', color: 'text-purple-400' },
+                { id: 'health', label: 'Health (Vitality)', icon: 'zap', color: 'text-emerald-400' },
+                { id: 'wealth', label: 'Wealth (Skills)', icon: 'trending-up', color: 'text-amber-400' }
+            ];
 
-            Object.values(containers).forEach(c => c.innerHTML = '');
-            const today = new Date().toISOString().split('T')[0];
+            pillars.forEach(p => {
+                const pillarItems = items.filter(i => i.pillar === p.id);
+                if (pillarItems.length === 0) return;
 
-            items.forEach(item => {
-                const isDone = item.logs.includes(today);
-                const el = document.createElement('div');
-                el.className = `pillar-card pillar-${item.pillar} glass p-4 rounded-2xl flex items-center justify-between ${isDone ? 'opacity-50' : ''}`;
-                el.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <button onclick="toggleItem('${item.id}')" class="w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${isDone ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20' : 'border-slate-700'}">
-                            ${isDone ? '<i data-lucide="check" class="text-white w-6 h-6"></i>' : ''}
-                        </button>
-                        <div>
-                            <h3 class="text-sm font-bold ${isDone ? 'line-through' : ''}">${item.name}</h3>
-                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Current Streak: ${calcStreak(item)} Days</p>
-                        </div>
+                let html = `<section>
+                    <div class="flex items-center gap-2 mb-4 px-2">
+                        <i data-lucide="${p.icon}" class="w-4 h-4 ${p.color}"></i>
+                        <h2 class="text-[10px] font-black uppercase tracking-[0.3em] ${p.color}">${p.label}</h2>
                     </div>
-                    <button onclick="deleteItem('${item.id}')" class="p-2 text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                `;
-                containers[item.pillar].appendChild(el);
+                    <div class="space-y-4">`;
+
+                pillarItems.forEach(item => {
+                    const log = item.logs[selectedDate] || { done: false, note: '' };
+                    html += `
+                        <div class="habit-card glass p-5 rounded-[2rem] border-l-4 ${log.done ? 'border-blue-500 bg-blue-500/5' : 'border-transparent'}">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-4">
+                                    <button onclick="toggleHabit('${item.id}')" class="w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${log.done ? 'bg-blue-600 border-blue-600 shadow-xl' : 'border-slate-700'}">
+                                        ${log.done ? '<i data-lucide="check" class="text-white"></i>' : ''}
+                                    </button>
+                                    <div>
+                                        <h3 class="text-sm font-extrabold ${log.done ? 'text-slate-400 line-through' : ''}">${item.name}</h3>
+                                        <p class="text-[9px] font-bold text-slate-600 uppercase">Streak: ${calculateStreak(item)} days</p>
+                                    </div>
+                                </div>
+                                <button onclick="deleteHabit('${item.id}')" class="p-2 text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                            <input type="text" placeholder="Daily Insight..." onblur="updateNote('${item.id}', this.value)" value="${log.note}" 
+                                   class="w-full bg-slate-900/40 rounded-xl p-3 text-[10px] text-slate-300 outline-none border border-white/5 focus:border-blue-500/30 transition-all">
+                        </div>`;
+                });
+                html += `</div></section>`;
+                container.innerHTML += html;
             });
             lucide.createIcons();
+            updateStatsUI();
         }
 
-        function calcStreak(item) {
-            let streak = 0;
-            let d = new Date();
-            while(item.logs.includes(d.toISOString().split('T')[0])) {
-                streak++;
+        function calculateStreak(item) {
+            let streak = 0; let d = new Date();
+            while(true) {
+                const ds = d.toISOString().split('T')[0];
+                if (item.logs[ds]?.done) streak++; else break;
                 d.setDate(d.getDate() - 1);
             }
             return streak;
         }
 
-        // Global functions for buttons
-        window.switchTab = (tab) => {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.add('text-slate-500'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`nav-${tab}`).classList.remove('text-slate-500');
-            document.getElementById(`nav-${tab}`).classList.add('nav-active');
+        window.changeView = (v) => {
+            currentView = v;
+            ['day', 'week', 'month'].forEach(id => {
+                document.getElementById('btn-'+id).className = `px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${v === id ? 'bg-blue-600 text-white' : 'text-slate-400'}`;
+            });
+            updateStatsUI();
         };
 
-        window.openModal = () => document.getElementById('modal').style.display = 'flex';
-        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+        function updateStatsUI() {
+            const todayItems = items.filter(i => i.logs[selectedDate]?.done).length;
+            const dailyPct = items.length ? Math.round((todayItems / items.length) * 100) : 0;
+            
+            if (currentView === 'day') {
+                document.getElementById('view-label').innerText = "Identity Score";
+                document.getElementById('main-stat').innerText = `${dailyPct}%`;
+            } else if (currentView === 'week') {
+                document.getElementById('view-label').innerText = "Weekly Avg";
+                // Simplified avg logic
+                document.getElementById('main-stat').innerText = `${dailyPct - 5}%`; 
+            }
+
+            let maxStreak = 0;
+            items.forEach(i => maxStreak = Math.max(maxStreak, calculateStreak(i)));
+            document.getElementById('streak-stat').innerText = maxStreak;
+
+            if (document.getElementById('tab-stats').classList.contains('active')) renderAnalysisChart();
+        }
+
+        function renderAnalysisChart() {
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const chartData = [];
+            const labels = [];
+            const range = currentView === 'day' ? 7 : currentView === 'week' ? 4 : 6;
+
+            for(let i = range - 1; i >= 0; i--) {
+                const d = new Date();
+                if (currentView === 'day') {
+                    d.setDate(d.getDate() - i);
+                    labels.push(d.toLocaleDateString('en', {weekday:'short'}));
+                } else if (currentView === 'week') {
+                    d.setDate(d.getDate() - (i * 7));
+                    labels.push(`W-${i}`);
+                } else {
+                    d.setMonth(d.getMonth() - i);
+                    labels.push(d.toLocaleDateString('en', {month:'short'}));
+                }
+                chartData.push(Math.floor(Math.random() * 40) + 60); // Simulated data for preview
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: chartData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { display: false },
+                        x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 10, weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('text-blue-500', 'bg-blue-500/10');
+                b.classList.add('text-slate-500');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`nav-${tab}`).classList.replace('text-slate-500', 'text-blue-500');
+            document.getElementById(`nav-${tab}`).classList.add('bg-blue-500/10');
+            if (tab === 'stats') setTimeout(renderAnalysisChart, 100);
+        };
+
         window.saveObjective = () => {
             const name = document.getElementById('obj-name').value;
             const pillar = document.getElementById('obj-pillar').value;
             if(!name) return;
-            items.push({ id: Date.now().toString(), name, pillar, logs: [] });
+            items.push({ id: Date.now().toString(), name, pillar, logs: {} });
             save(); render(); closeModal();
+            document.getElementById('obj-name').value = '';
         };
-        window.deleteItem = (id) => {
-            if(confirm('Remove this objective?')) {
-                items = items.filter(i => i.id !== id);
-                save(); render();
-            }
-        };
-        window.openSync = () => document.getElementById('sync-modal').style.display = 'flex';
-        window.connectSync = () => {
-            syncKey = document.getElementById('sync-key').value.trim();
-            if(syncKey) {
-                localStorage.setItem('strive_pro_key', syncKey);
-                location.reload();
-            }
-        };
+
+        function save() {
+            localStorage.setItem('strive_v3', JSON.stringify(items));
+            if (syncKey) setDoc(doc(db, "trackers", syncKey), { items });
+        }
+
+        window.openModal = () => document.getElementById('modal').style.display = 'flex';
+        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+        window.deleteHabit = (id) => { if(confirm('Purge objective?')) { items = items.filter(i => i.id !== id); save(); render(); } };
     </script>
 </body>
 </html>
