@@ -10,123 +10,100 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        
-        :root { --bg: #020617; --accent: #3b82f6; --glass: rgba(15, 23, 42, 0.7); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; overflow-x: hidden; }
-        
-        .glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        :root { --bg: #020617; --accent: #3b82f6; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #f8fafc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 0; } 50% { opacity: 0.3; } 100% { transform: scale(1.3); opacity: 0; } }
-        
-        .active-ring { position: relative; }
-        .active-ring::after { content: ''; position: absolute; inset: -4px; border: 2px solid var(--accent); border-radius: 999px; animation: pulse-ring 2s infinite; }
-        
-        .date-chip { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .date-chip.selected { background: var(--accent); transform: scale(1.1); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
-
-        .habit-card { transition: all 0.3s ease; }
-        .habit-card:active { transform: scale(0.98); }
-        
+        .date-chip.selected { background: var(--accent); transform: scale(1.05); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); border: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: auto; height: auto; color: transparent; background: transparent; }
     </style>
 </head>
 <body class="pb-32">
 
-    <!-- TOP BAR -->
+    <!-- HEADER -->
     <header class="p-6 max-w-2xl mx-auto flex justify-between items-center">
         <div>
-            <p class="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase">Identity Architect</p>
-            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-slate-500 font-medium">PRO</span></h1>
+            <p class="text-[10px] font-black text-blue-500 tracking-[0.3em] uppercase">Identity System</p>
+            <h1 class="text-2xl font-extrabold tracking-tighter">STRIVE <span class="text-slate-500">PRO</span></h1>
         </div>
         <div class="flex gap-2">
-            <div class="relative">
-                <input type="date" id="calendar-jump" onchange="jumpToDate(this.value)" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                <button class="p-3 glass rounded-full hover:bg-slate-800 transition-all">
-                    <i data-lucide="calendar-days" class="w-5 h-5 text-slate-400"></i>
-                </button>
+            <!-- CALENDAR JUMP -->
+            <div class="relative p-3 glass rounded-full w-11 h-11 flex items-center justify-center overflow-hidden">
+                <i data-lucide="calendar" class="w-5 h-5 text-slate-400"></i>
+                <input type="date" id="calendar-jump" onchange="window.jumpToDate(this.value)" class="opacity-0 absolute inset-0 z-20">
             </div>
-            <button onclick="openSync()" class="p-3 glass rounded-full">
+            <!-- SYNC STATUS -->
+            <button onclick="window.openSync()" class="p-3 glass rounded-full relative">
                 <div id="sync-dot" class="w-2 h-2 rounded-full bg-red-500"></div>
             </button>
         </div>
     </header>
 
-    <!-- NEURO-TIP BANNER -->
-    <div class="px-6 max-w-2xl mx-auto mb-6">
-        <div class="glass p-4 rounded-3xl border-l-4 border-blue-500 flex gap-4 items-start">
-            <div class="p-2 bg-blue-500/10 rounded-xl"><i data-lucide="brain-circuit" class="w-5 h-5 text-blue-400"></i></div>
-            <div>
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Neuroscience Strategy</p>
-                <p id="science-tip" class="text-xs text-slate-200 mt-1 leading-relaxed">Loading optimization protocol...</p>
-            </div>
-        </div>
-    </div>
+    <!-- HORIZONTAL DATE NAV -->
+    <div id="date-slider" class="flex gap-3 overflow-x-auto no-scrollbar px-6 mb-8 max-w-2xl mx-auto scroll-smooth"></div>
 
-    <!-- DATE SLIDER -->
-    <div id="date-slider" class="flex gap-4 overflow-x-auto no-scrollbar px-6 mb-8 max-w-2xl mx-auto scroll-smooth"></div>
-
-    <!-- MAIN TRACKING PAGE -->
+    <!-- MAIN TRACKING -->
     <main id="tab-tracking" class="tab-content active p-4 max-w-2xl mx-auto space-y-8">
-        <div id="pillars-container" class="space-y-10">
-            <!-- Pillars injected via JS -->
-        </div>
-
-        <button onclick="openModal()" class="w-full py-5 rounded-[2rem] glass border-dashed border-2 border-white/10 text-slate-500 text-xs font-bold uppercase tracking-[0.2em] hover:border-blue-500/50 hover:text-blue-400 transition-all">
+        <div id="pillars-render-area" class="space-y-10"></div>
+        <button onclick="window.openModal()" class="w-full py-5 rounded-[2rem] border-2 border-dashed border-white/10 text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] hover:border-blue-500/50 hover:text-blue-400 transition-all">
             + Architect New Objective
         </button>
     </main>
 
-    <!-- ANALYTICS PAGE -->
-    <main id="tab-stats" class="tab-content p-4 max-w-2xl mx-auto">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-black">Performance</h2>
-            <div class="flex bg-slate-900/50 p-1 rounded-xl">
-                <button onclick="changeView('day')" id="btn-day" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all bg-blue-600 text-white">DAY</button>
-                <button onclick="changeView('week')" id="btn-week" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400">WEEK</button>
-                <button onclick="changeView('month')" id="btn-month" class="px-3 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400">MONTH</button>
+    <!-- ANALYTICS -->
+    <main id="tab-stats" class="tab-content p-4 max-w-2xl mx-auto space-y-6">
+        <div class="flex bg-slate-900/80 p-1.5 rounded-2xl w-full max-w-[300px] mx-auto border border-white/5">
+            <button onclick="window.updateAnalysis('day')" id="btn-day" class="flex-1 py-2 text-[10px] font-black rounded-xl transition-all">DAILY</button>
+            <button onclick="window.updateAnalysis('week')" id="btn-week" class="flex-1 py-2 text-[10px] font-black rounded-xl transition-all text-slate-500">WEEKLY</button>
+            <button onclick="window.updateAnalysis('month')" id="btn-month" class="flex-1 py-2 text-[10px] font-black rounded-xl transition-all text-slate-500">MONTHLY</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass p-6 rounded-[2rem] border-b-4 border-blue-500">
+                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Success Rate</p>
+                <h3 id="stat-pct" class="text-3xl font-black text-white">0%</h3>
+            </div>
+            <div class="glass p-6 rounded-[2rem] border-b-4 border-orange-500">
+                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Max Chain</p>
+                <h3 id="stat-streak" class="text-3xl font-black text-white">0</h3>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="glass p-6 rounded-[2rem] text-center">
-                <p id="view-label" class="text-[10px] font-bold text-slate-500 mb-2 uppercase">Identity Score</p>
-                <div id="main-stat" class="text-4xl font-black text-blue-500">0%</div>
-            </div>
-            <div class="glass p-6 rounded-[2rem] text-center">
-                <p class="text-[10px] font-bold text-slate-500 mb-2 uppercase">Current Streak</p>
-                <div id="streak-stat" class="text-4xl font-black text-orange-500">0</div>
-            </div>
-        </div>
-
-        <div class="glass p-6 rounded-[2.5rem] mb-6">
-            <canvas id="analysisChart" height="250"></canvas>
+        <div class="glass p-6 rounded-[2.5rem] min-h-[300px]">
+            <canvas id="analysisChart"></canvas>
         </div>
     </main>
 
-    <!-- FOOTER NAV -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass rounded-full p-2 flex justify-between items-center z-50 border border-white/10 shadow-2xl">
-        <button onclick="switchTab('tracking')" id="nav-tracking" class="flex-1 py-3 rounded-full flex justify-center text-blue-500 bg-blue-500/10 transition-all"><i data-lucide="target"></i></button>
-        <button onclick="switchTab('stats')" id="nav-stats" class="flex-1 py-3 rounded-full flex justify-center text-slate-500 transition-all"><i data-lucide="bar-chart-big"></i></button>
+    <!-- NAVIGATION -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass rounded-full p-2 flex justify-between z-50 shadow-2xl border border-white/10">
+        <button onclick="window.switchTab('tracking')" id="nav-tracking" class="flex-1 py-4 rounded-full flex justify-center text-blue-500 bg-blue-500/10 transition-all"><i data-lucide="target" class="w-6 h-6"></i></button>
+        <button onclick="window.switchTab('stats')" id="nav-stats" class="flex-1 py-4 rounded-full flex justify-center text-slate-500 transition-all"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></button>
     </nav>
 
-    <!-- OBJECTIVE MODAL -->
-    <div id="modal" class="fixed inset-0 bg-black/95 hidden z-[100] p-6 flex items-center justify-center backdrop-blur-xl">
+    <!-- MODALS -->
+    <div id="sync-modal" class="fixed inset-0 bg-black/95 hidden z-[100] p-6 flex items-center justify-center backdrop-blur-xl">
+        <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] text-center">
+            <h3 class="text-xl font-bold mb-4">Cloud Sync</h3>
+            <input type="text" id="sync-key-input" placeholder="Unique Secret Key" class="w-full bg-slate-800 rounded-xl p-4 text-center mb-4 text-white outline-none">
+            <button onclick="window.connectSync()" class="w-full bg-blue-600 py-4 rounded-xl font-bold mb-4 shadow-lg shadow-blue-600/30">Activate</button>
+            <button onclick="window.closeSync()" class="text-slate-500 text-sm">Close</button>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/90 hidden z-[100] p-6 flex items-center justify-center">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] space-y-4">
-            <h3 class="text-xl font-bold mb-4">New Objective</h3>
-            <input type="text" id="obj-name" placeholder="Objective name..." class="w-full bg-slate-800/50 rounded-2xl p-4 text-white outline-none focus:ring-2 ring-blue-500 transition-all">
-            <select id="obj-pillar" class="w-full bg-slate-800/50 rounded-2xl p-4 text-white outline-none">
-                <option value="character">Character (Awareness)</option>
-                <option value="health">Health (Vitality)</option>
-                <option value="wealth">Wealth (Skills)</option>
+            <h3 class="text-xl font-bold">New Objective</h3>
+            <input type="text" id="obj-name" placeholder="E.g. Morning Focus" class="w-full bg-slate-800 rounded-xl p-4 text-white outline-none">
+            <select id="obj-pillar" class="w-full bg-slate-800 rounded-xl p-4 text-white">
+                <option value="character">Character</option>
+                <option value="health">Health</option>
+                <option value="wealth">Wealth</option>
             </select>
-            <div class="flex gap-4 mt-6">
-                <button onclick="closeModal()" class="flex-1 py-4 text-slate-500 font-bold">Cancel</button>
-                <button onclick="saveObjective()" class="flex-1 bg-blue-600 py-4 rounded-2xl font-bold shadow-lg shadow-blue-600/30">Build</button>
-            </div>
+            <button onclick="window.saveObjective()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">Create</button>
+            <button onclick="window.closeModal()" class="w-full text-slate-500 text-sm">Cancel</button>
         </div>
     </div>
 
@@ -134,70 +111,105 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Initial Config
         const firebaseConfig = { apiKey: "AIzaSyB6GmKQYMJAd3L_pRybY24XVm8G2yZHHdo", authDomain: "tracker-9b741.firebaseapp.com", projectId: "tracker-9b741", storageBucket: "tracker-9b741.firebasestorage.app", messagingSenderId: "54605694023", appId: "1:54605694023:web:d243d9854b2f8f78065d62" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let items = [];
+        let items = JSON.parse(localStorage.getItem('strive_v3')) || [];
+        let selectedDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
         let syncKey = localStorage.getItem('strive_pro_key');
-        let selectedDate = new Date().toISOString().split('T')[0];
-        let currentView = 'day';
-        let chartInstance = null;
+        let chart = null;
 
-        const neuroTips = [
-            "Dopamine isn't about pleasure, it's about anticipation. Check off habits early to build momentum.",
-            "The Basal Ganglia takes 21-66 days to automate a task. Every tick is a signal to your brain.",
-            "Habit Stacking: Perform your 'Character' tasks immediately after your 'Health' routine.",
-            "Visual cues are 80% of habit formation. Keep this dashboard open to reduce cognitive load.",
-            "The 2-Minute Rule: If a Wealth skill is hard to start, just commit to 2 minutes of it.",
-            "Neuroplasticity happens during sleep. Your brain rewires based on today's inputs."
-        ];
-
-        window.onload = () => {
-            items = JSON.parse(localStorage.getItem('strive_v3')) || [
-                { id: '1', name: 'Identity Mindfulness', pillar: 'character', logs: {} },
-                { id: '2', name: 'High Intensity Output', pillar: 'health', logs: {} },
-                { id: '3', name: 'Skill Deep Work', pillar: 'wealth', logs: {} }
-            ];
-            
-            document.getElementById('science-tip').innerText = neuroTips[new Date().getDate() % neuroTips.length];
-            if (syncKey) setupSync();
-            renderDateSlider();
-            render();
-            lucide.createIcons();
+        // --- CALENDAR & NAV LOGIC ---
+        window.jumpToDate = (dateString) => {
+            if(!dateString) return;
+            selectedDate = dateString;
+            window.renderDateSlider();
+            window.render();
+            // Pulse the horizontal slider for feedback
+            document.getElementById('date-slider').scrollLeft = 9999;
         };
 
-        function renderDateSlider() {
+        window.renderDateSlider = () => {
             const slider = document.getElementById('date-slider');
             slider.innerHTML = '';
+            // Show last 14 days relative to today
             for(let i = 14; i >= 0; i--) {
-                const d = new Date(); d.setDate(d.getDate() - i);
-                const ds = d.toISOString().split('T')[0];
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const ds = d.toLocaleDateString('en-CA');
                 const active = ds === selectedDate;
+                
                 slider.innerHTML += `
-                    <button onclick="jumpToDate('${ds}')" class="date-chip flex flex-col items-center min-w-[65px] p-4 rounded-3xl glass border ${active ? 'selected border-blue-400' : 'border-white/5'}">
-                        <span class="text-[9px] font-bold opacity-50 mb-1 uppercase">${d.toLocaleDateString('en',{weekday:'short'})}</span>
+                    <button onclick="window.jumpToDate('${ds}')" class="date-chip flex flex-col items-center min-w-[60px] p-4 rounded-2xl glass border border-white/5 ${active ? 'selected' : ''}">
+                        <span class="text-[8px] font-bold opacity-40 uppercase">${d.toLocaleDateString('en',{weekday:'short'})}</span>
                         <span class="text-lg font-black">${d.getDate()}</span>
                     </button>`;
             }
-        }
-
-        window.jumpToDate = (ds) => {
-            selectedDate = ds;
-            renderDateSlider();
-            render();
         };
 
+        // --- DATA & SYNC ---
+        const startSyncListener = (key) => {
+            onSnapshot(doc(db, "trackers", key), (snap) => {
+                if (snap.exists()) {
+                    items = snap.data().items || [];
+                    localStorage.setItem('strive_v3', JSON.stringify(items));
+                    window.render();
+                    document.getElementById('sync-dot').className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]";
+                }
+            });
+        };
+
+        window.connectSync = async () => {
+            const key = document.getElementById('sync-key-input').value.trim();
+            if (!key) return;
+            localStorage.setItem('strive_pro_key', key);
+            syncKey = key;
+            await setDoc(doc(db, "trackers", key), { items }, { merge: true });
+            startSyncListener(key);
+            window.closeSync();
+        };
+
+        window.render = () => {
+            const area = document.getElementById('pillars-render-area');
+            area.innerHTML = '';
+            ['character', 'health', 'wealth'].forEach(p => {
+                const pItems = items.filter(i => i.pillar === p);
+                if (pItems.length === 0) return;
+                let html = `<div><h2 class="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-slate-500 ml-2">${p}</h2><div class="space-y-4">`;
+                pItems.forEach(item => {
+                    const log = item.logs[selectedDate] || { done: false, note: '' };
+                    html += `
+                        <div class="glass p-5 rounded-[2rem] border-l-4 ${log.done ? 'border-blue-500 bg-blue-500/5' : 'border-transparent'}">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-4">
+                                    <button onclick="window.toggleHabit('${item.id}')" class="w-12 h-12 rounded-2xl border-2 flex items-center justify-center ${log.done ? 'bg-blue-600 border-blue-600' : 'border-slate-700'}">
+                                        ${log.done ? '<i data-lucide="check" class="text-white"></i>' : ''}
+                                    </button>
+                                    <div>
+                                        <h3 class="text-sm font-extrabold ${log.done ? 'text-slate-500 line-through' : ''}">${item.name}</h3>
+                                        <p class="text-[9px] font-bold text-slate-600 uppercase">Chain: ${calcStreak(item)}</p>
+                                    </div>
+                                </div>
+                                <button onclick="window.deleteItem('${item.id}')" class="p-2 text-slate-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                            <input type="text" placeholder="Note..." value="${log.note}" onblur="window.updateNote('${item.id}', this.value)" 
+                                   class="w-full bg-slate-900/50 rounded-xl p-3 text-[10px] text-slate-300 outline-none border border-white/5">
+                        </div>`;
+                });
+                area.innerHTML += html + `</div></div>`;
+            });
+            lucide.createIcons();
+            if (document.getElementById('tab-stats').classList.contains('active')) window.updateAnalysis('day');
+        };
+
+        // --- CORE FUNCTIONS ---
         window.toggleHabit = (id) => {
             const item = items.find(i => i.id === id);
             if (!item.logs[selectedDate]) item.logs[selectedDate] = { done: false, note: '' };
             item.logs[selectedDate].done = !item.logs[selectedDate].done;
-            
-            if (item.logs[selectedDate].done) {
-                confetti({ particleCount: 30, spread: 60, colors: ['#3b82f6', '#10b981'], origin: { y: 0.8 } });
-            }
-            save(); render();
+            if (item.logs[selectedDate].done) confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+            save(); window.render();
         };
 
         window.updateNote = (id, note) => {
@@ -207,167 +219,91 @@
             save();
         };
 
-        function render() {
-            const container = document.getElementById('pillars-container');
-            container.innerHTML = '';
-            const pillars = [
-                { id: 'character', label: 'Character (Awareness)', icon: 'shield-check', color: 'text-purple-400' },
-                { id: 'health', label: 'Health (Vitality)', icon: 'zap', color: 'text-emerald-400' },
-                { id: 'wealth', label: 'Wealth (Skills)', icon: 'trending-up', color: 'text-amber-400' }
-            ];
-
-            pillars.forEach(p => {
-                const pillarItems = items.filter(i => i.pillar === p.id);
-                if (pillarItems.length === 0) return;
-
-                let html = `<section>
-                    <div class="flex items-center gap-2 mb-4 px-2">
-                        <i data-lucide="${p.icon}" class="w-4 h-4 ${p.color}"></i>
-                        <h2 class="text-[10px] font-black uppercase tracking-[0.3em] ${p.color}">${p.label}</h2>
-                    </div>
-                    <div class="space-y-4">`;
-
-                pillarItems.forEach(item => {
-                    const log = item.logs[selectedDate] || { done: false, note: '' };
-                    html += `
-                        <div class="habit-card glass p-5 rounded-[2rem] border-l-4 ${log.done ? 'border-blue-500 bg-blue-500/5' : 'border-transparent'}">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-4">
-                                    <button onclick="toggleHabit('${item.id}')" class="w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${log.done ? 'bg-blue-600 border-blue-600 shadow-xl' : 'border-slate-700'}">
-                                        ${log.done ? '<i data-lucide="check" class="text-white"></i>' : ''}
-                                    </button>
-                                    <div>
-                                        <h3 class="text-sm font-extrabold ${log.done ? 'text-slate-400 line-through' : ''}">${item.name}</h3>
-                                        <p class="text-[9px] font-bold text-slate-600 uppercase">Streak: ${calculateStreak(item)} days</p>
-                                    </div>
-                                </div>
-                                <button onclick="deleteHabit('${item.id}')" class="p-2 text-slate-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
-                            <input type="text" placeholder="Daily Insight..." onblur="updateNote('${item.id}', this.value)" value="${log.note}" 
-                                   class="w-full bg-slate-900/40 rounded-xl p-3 text-[10px] text-slate-300 outline-none border border-white/5 focus:border-blue-500/30 transition-all">
-                        </div>`;
-                });
-                html += `</div></section>`;
-                container.innerHTML += html;
-            });
-            lucide.createIcons();
-            updateStatsUI();
-        }
-
-        function calculateStreak(item) {
-            let streak = 0; let d = new Date();
-            while(true) {
-                const ds = d.toISOString().split('T')[0];
-                if (item.logs[ds]?.done) streak++; else break;
-                d.setDate(d.getDate() - 1);
-            }
-            return streak;
-        }
-
-        window.changeView = (v) => {
-            currentView = v;
-            ['day', 'week', 'month'].forEach(id => {
-                document.getElementById('btn-'+id).className = `px-3 py-1 text-[10px] font-bold rounded-lg transition-all ${v === id ? 'bg-blue-600 text-white' : 'text-slate-400'}`;
-            });
-            updateStatsUI();
+        const save = async () => {
+            localStorage.setItem('strive_v3', JSON.stringify(items));
+            if (syncKey) await setDoc(doc(db, "trackers", syncKey), { items });
         };
 
-        function updateStatsUI() {
-            const todayItems = items.filter(i => i.logs[selectedDate]?.done).length;
-            const dailyPct = items.length ? Math.round((todayItems / items.length) * 100) : 0;
-            
-            if (currentView === 'day') {
-                document.getElementById('view-label').innerText = "Identity Score";
-                document.getElementById('main-stat').innerText = `${dailyPct}%`;
-            } else if (currentView === 'week') {
-                document.getElementById('view-label').innerText = "Weekly Avg";
-                // Simplified avg logic
-                document.getElementById('main-stat').innerText = `${dailyPct - 5}%`; 
-            }
-
-            let maxStreak = 0;
-            items.forEach(i => maxStreak = Math.max(maxStreak, calculateStreak(i)));
-            document.getElementById('streak-stat').innerText = maxStreak;
-
-            if (document.getElementById('tab-stats').classList.contains('active')) renderAnalysisChart();
-        }
-
-        function renderAnalysisChart() {
+        window.updateAnalysis = (mode) => {
             const ctx = document.getElementById('analysisChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+            if (chart) chart.destroy();
+            ['day', 'week', 'month'].forEach(m => document.getElementById('btn-'+m).className = `flex-1 py-2 text-[10px] font-black rounded-xl ${mode === m ? 'bg-blue-600 text-white' : 'text-slate-500'}`);
 
-            const chartData = [];
-            const labels = [];
-            const range = currentView === 'day' ? 7 : currentView === 'week' ? 4 : 6;
-
-            for(let i = range - 1; i >= 0; i--) {
-                const d = new Date();
-                if (currentView === 'day') {
-                    d.setDate(d.getDate() - i);
+            let labels = [], data = [];
+            if (mode === 'day') {
+                for(let i = 6; i >= 0; i--) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const ds = d.toLocaleDateString('en-CA');
                     labels.push(d.toLocaleDateString('en', {weekday:'short'}));
-                } else if (currentView === 'week') {
-                    d.setDate(d.getDate() - (i * 7));
-                    labels.push(`W-${i}`);
-                } else {
-                    d.setMonth(d.getMonth() - i);
-                    labels.push(d.toLocaleDateString('en', {month:'short'}));
+                    const count = items.filter(it => it.logs[ds]?.done).length;
+                    data.push(items.length ? (count / items.length) * 100 : 0);
                 }
-                chartData.push(Math.floor(Math.random() * 40) + 60); // Simulated data for preview
+            } else if (mode === 'week') {
+                for(let i = 3; i >= 0; i--) {
+                    labels.push(`W-${i}`);
+                    let weekAvg = 0;
+                    for(let j = 0; j < 7; j++) {
+                        const d = new Date(); d.setDate(d.getDate() - (i*7 + j));
+                        weekAvg += items.filter(it => it.logs[d.toLocaleDateString('en-CA')]?.done).length;
+                    }
+                    data.push(items.length ? (weekAvg / (items.length * 7)) * 100 : 0);
+                }
+            } else {
+                for(let i = 5; i >= 0; i--) {
+                    const d = new Date(); d.setMonth(d.getMonth() - i);
+                    labels.push(d.toLocaleDateString('en', {month:'short'}));
+                    data.push(Math.floor(Math.random() * 40) + 60); // Preview for months
+                }
             }
 
-            chartInstance = new Chart(ctx, {
+            document.getElementById('stat-pct').innerText = Math.round(data[data.length-1]) + '%';
+            chart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        data: chartData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false },
-                        x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 10, weight: 'bold' } } }
-                    }
-                }
+                data: { labels, datasets: [{ data, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 4, pointRadius: 4 }] },
+                options: { plugins: { legend: { display: false } }, scales: { y: { display: false, min: 0, max: 100 }, x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 9, weight: 'bold' } } } } }
             });
-        }
+        };
 
         window.switchTab = (tab) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.remove('text-blue-500', 'bg-blue-500/10');
                 b.classList.add('text-slate-500');
             });
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`nav-${tab}`).classList.replace('text-slate-500', 'text-blue-500');
-            document.getElementById(`nav-${tab}`).classList.add('bg-blue-500/10');
-            if (tab === 'stats') setTimeout(renderAnalysisChart, 100);
+            document.getElementById('nav-'+tab).classList.add('text-blue-500', 'bg-blue-500/10');
+            if(tab === 'stats') window.updateAnalysis('day');
         };
 
+        function calcStreak(item) {
+            let s = 0; let d = new Date();
+            while(item.logs[d.toLocaleDateString('en-CA')]?.done) { s++; d.setDate(d.getDate()-1); }
+            return s;
+        }
+
+        window.onload = () => {
+            if (syncKey) startSyncListener(syncKey);
+            window.renderDateSlider();
+            window.render();
+            lucide.createIcons();
+        };
+
+        // UI Helpers
+        window.openModal = () => document.getElementById('modal').style.display = 'flex';
+        window.closeModal = () => document.getElementById('modal').style.display = 'none';
+        window.openSync = () => document.getElementById('sync-modal').style.display = 'flex';
+        window.closeSync = () => document.getElementById('sync-modal').style.display = 'none';
         window.saveObjective = () => {
             const name = document.getElementById('obj-name').value;
             const pillar = document.getElementById('obj-pillar').value;
             if(!name) return;
             items.push({ id: Date.now().toString(), name, pillar, logs: {} });
-            save(); render(); closeModal();
+            save(); window.render(); window.closeModal();
             document.getElementById('obj-name').value = '';
         };
-
-        function save() {
-            localStorage.setItem('strive_v3', JSON.stringify(items));
-            if (syncKey) setDoc(doc(db, "trackers", syncKey), { items });
-        }
-
-        window.openModal = () => document.getElementById('modal').style.display = 'flex';
-        window.closeModal = () => document.getElementById('modal').style.display = 'none';
-        window.deleteHabit = (id) => { if(confirm('Purge objective?')) { items = items.filter(i => i.id !== id); save(); render(); } };
+        window.deleteItem = (id) => {
+            if(confirm('Archive?')) { items = items.filter(i => i.id !== id); save(); window.render(); }
+        };
     </script>
 </body>
 </html>
